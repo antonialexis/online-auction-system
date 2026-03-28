@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/header";
 import ItemCard from "../components/itemcards";
 
@@ -34,43 +35,43 @@ const collectorItems = [
 ];
 
 const HomePage = () => {
+
+  const limitedItemsRef = useRef(null);
+  const navigate = useNavigate();
+
+  const scrollToItems = () => {
+    limitedItemsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="dark-theme">
-      {/* Integrated the new dark Header */}
       <Header />
 
-      {/* 2. HERO SECTION (Replicating the bold text and 2-column layout) */}
+      {/* HERO SECTION */}
       <section className="container py-5 my-5">
         <div className="row align-items-center g-5">
           <div className="col-lg-6 text-start">
             <h1 className="display-3 fw-bold text-white mb-4 lh-sm">
               Explore the{" "}
               <span style={{ color: "var(--accent-pink)" }}>10,000+</span> best
-              collectible lots right here
+              collectible items right here
             </h1>
             <p className="lead text-white opacity-75 mb-5">
-              Buy rare digital assets and physical collectibles in here and get
-              your new collection started.
+              Buy rare digital and physical collectibles in here to add
+              to your collection.
             </p>
-            <div className="d-flex gap-3 justify-content-start">
+           <div className="d-flex gap-3 justify-content-start">
+
               <button
+                onClick={scrollToItems}
                 className="btn btn-primary text-white fw-bold px-4 py-3"
-                style={{
-                  backgroundColor: "#4f46e5" /* Bright blue */,
-                  borderRadius: "8px",
-                }}
+                style={{ backgroundColor: "#4f46e5", borderRadius: "8px", border: "none" }}
               >
-                Explore lots
-              </button>
-              <button
-                className="btn btn-link text-white text-decoration-none fw-bold"
-                style={{ opacity: "0.8" }}
-              >
-                Create a lot
+                Explore limited products
               </button>
             </div>
 
-            {/* Replicating the 10K+ / 15K+ stats line (Mental requirement check) */}
+            {/* NUMBERS DISPLAY */}
             <div className="d-flex gap-5 justify-content-start text-start text-white pt-5 mt-4">
               <div>
                 <h2 className="mb-0 fw-bold">10K+</h2>
@@ -88,7 +89,7 @@ const HomePage = () => {
           </div>
 
           <div className="col-lg-6 d-none d-lg-block">
-            {/* Simulated Featured Lot on the right (Replicating the Metaz featured item) */}
+            {/* FEATURED ITEM DISPLAY */}
             <div
               className="p-3"
               style={{
@@ -107,7 +108,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 3. ITEM CATEGORIES (Explicitly showing your new Anime/Pokemon Focus) */}
+      {/* ITEM CATEGORIES  */}
       <section className="container mb-5 py-4">
         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 dark-theme-border">
           <div className="d-flex align-items-center gap-2">
@@ -120,15 +121,9 @@ const HomePage = () => {
               All Collectibles
             </button>
           </div>
-          <a
-            href="#"
-            className="text-white opacity-75 small text-decoration-none"
-          >
-            See All <i className="bi bi-chevron-right fs-xs"></i>
-          </a>
         </div>
 
-        {/* Bold, modern category buttons (Replicating the Metaz category images style) */}
+        {/* CATEGORY BUTTONS */}
         <div className="row row-cols-2 row-cols-md-4 g-3 mb-5">
           <div className="col">
             <button
@@ -181,41 +176,33 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 4. "LIMITED AUCTION" (Items/Bids Grid) */}
-      <section className="container mb-5 pb-5">
+      {/* LIMITED ITEMS | INIT NGA ITEMS */}
+     <section ref={limitedItemsRef} className="container mb-5 pb-5">
         <div className="d-flex align-items-center justify-content-between mb-4">
-          <h2 className="h4 fw-bold text-white mb-0">
-            Limited Auctions{" "}
-            <span className="text-warning small ms-2">
-              <i className="bi bi-lightning-fill"></i> Hot Bids
-            </span>
-          </h2>
-          <button className="btn btn-outline-light btn-sm rounded-pill fw-bold">
-            Explore More <i className="bi bi-arrow-right"></i>
-          </button>
+            <h2 className="h4 fw-bold text-white mb-0">
+              Limited Auctions <span className="text-warning small ms-2"><i className="bi bi-lightning-fill"></i> Hot Bids</span>
+            </h2>
+
+            <button 
+              onClick={() => navigate('/marketplace')} 
+              className="btn btn-outline-light btn-sm rounded-pill fw-bold"
+            >
+              Explore More <i className="bi bi-arrow-right"></i>
+            </button>
         </div>
 
-        {/* Integrating the new ItemCard */}
         <div className="row row-cols-1 row-cols-md-3 g-4">
-          {collectorItems.map((item) => (
-            <div className="col" key={item.id}>
-              <ItemCard item={item} />
-            </div>
-          ))}
+            {collectorItems.map((item) => (
+              <div className="col" key={item.id}>
+                <ItemCard item={item} />
+              </div>
+            ))}
         </div>
       </section>
 
-      {/* 5. BASIC DARK FOOTER */}
-      <footer
-        className="bg-dark text-white py-5 mt-auto"
-        style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}
-      >
+      <footer className="bg-dark text-white py-3 mt-auto" style={{ borderTop: "2px solid rgba(255, 255, 255, 0.1)" }}>
         <div className="container text-center">
           <p className="mb-0 fw-bold">Collectors.net Auction</p>
-          <small className="text-muted">
-            A modern marketplace for unique collectible items. Real focus:
-            Items, Sellers, Bidders, Bids.
-          </small>
         </div>
       </footer>
     </div>

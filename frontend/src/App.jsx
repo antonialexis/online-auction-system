@@ -1,18 +1,18 @@
-import { useState } from "react";
-import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/homepage";
-// import ItemDetail from './pages/ItemDetail';
-// import Profile from './pages/Profile';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './pages/login';
+import Signup from './pages/register';
+import HomePage from './pages/homepage';
+import Dashboard from './pages/dashboard';
 
 function App() {
   return (
-    <Router>
+   <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        {/* Future routes for your focus requirements: */}
-        {/* <Route path="/item/:id" element={<ItemDetail />} /> */}
-        {/* <Route path="/profile" element={<Profile />} /> */}
+        <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+
       </Routes>
     </Router>
   );
