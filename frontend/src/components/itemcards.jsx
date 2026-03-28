@@ -13,7 +13,7 @@ const ItemCard = ({ item }) => {
           alt={item.title}
           style={{ height: "300px", objectFit: "cover" }}
         />
-        {/* Timer, mimicking the 07:20:30 in the design */}
+        {/* TIMER DISPLAY SIMULATION */}
         <span
           className="position-absolute top-0 end-0 m-3 badge rounded-pill text-white small fw-normal"
           style={{ backgroundColor: "rgba(22, 26, 45, 0.7)" }}
@@ -25,7 +25,7 @@ const ItemCard = ({ item }) => {
         <h6 className="card-title text-white fw-bold mb-1 text-truncate">
           {item.title}
         </h6>
-        {/* Replicating the 'By-Starklee' author line (Sellers/Bidders requirement) */}
+        {/* SELLER DISPLAY */}
         <div className="d-flex align-items-center gap-2 mb-3">
           <img
             src={`https://placehold.co/24x24/333/fff?text=${item.sellerShort}`}
@@ -46,7 +46,7 @@ const ItemCard = ({ item }) => {
           </p>
         </div>
 
-        {/* Full width primary action button */}
+        {/* PLACE BID BUTTON */}
         <button
           className="btn btn-primary w-100 fw-bold rounded-3 py-2"
           style={{

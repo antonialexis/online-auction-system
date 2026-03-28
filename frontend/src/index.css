@@ -1,51 +1,23 @@
 /* src/index.css */
+
+/* Define CSS Variables for easy color changes */
 :root {
   --bg-dark-start: #0e1121; /* Start of your dark gradient */
-  --bg-dark-end: #070914; /* End of your dark gradient */
-  --accent-pink: #d946ef; /* Neon magenta/pink for highlight text */
-  --primary-blue: #3b82f6; /* Blue for buttons */
+  --bg-dark-end: #070914;   /* End of your dark gradient */
+  --accent-pink: #d946ef;  /* Neon magenta/pink for highlight text */
+  --primary-blue: #3b82f6;  /* Blue for buttons */
 }
 
 body {
   margin: 0;
-  font-family:
-    "Inter",
-    -apple-system,
-    sans-serif; /* A modern font is key! Install Inter if needed, or use sans-serif */
+  font-family: 'Inter', -apple-system, sans-serif; /* A modern font is key! Install Inter if needed, or use sans-serif */
   background-color: var(--bg-dark-start);
-  background-image: linear-gradient(
-    to bottom,
-    var(--bg-dark-start),
-    var(--bg-dark-end)
-  );
+  background-image: linear-gradient(to bottom, var(--bg-dark-start), var(--bg-dark-end));
   color: #fff;
   -webkit-font-smoothing: antialiased;
 }
 
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
-
-/* Custom utility for visual guide */
-.border-bottom {
-  border-bottom: 1px solid #dee2e6 !important;
-}
-
-/* Custom utility to handle overflowing categories like on mobile/small screens */
-.scrollable-categories {
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-.scrollable-categories::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
-}
-
-/* Base styles for the hero banner image */
-.hero-banner {
-  background-size: cover;
-  background-position: center;
-}
-
+/* Optional: Custom utility to force dark borders and text */
 .dark-theme-border {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
 }
