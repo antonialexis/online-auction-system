@@ -116,4 +116,25 @@ app.post("/api/forgot-password", async (req, res) => {
   }
 });
 
+// 5. GET ALL AUCTION ITEMS
+app.get("/api/items", async (req, res) => {
+  try {
+    // JOIN to get the seller's name with item details
+    const [rows] = await db.query(`
+      SELECT 
+        items.*, 
+        users.first_name, 
+        users.last_name 
+      FROM items 
+      JOIN users ON items.seller_id = users.id
+      WHERE items.status = 'active'
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching items:", err);
+    res.status(500).json({ error: "Failed to fetch auction items" });
+  }
+});
+
 app.listen(5000, () => console.log("Server is running on port 5000!"));
