@@ -9,9 +9,12 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); // Reset error message
+    setError("");
 
     try {
       const response = await fetch("http://localhost:5000/api/login", {
@@ -23,10 +26,8 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Redirect to homepage on success
         navigate("/home");
       } else {
-        // Show specific error from backend
         setError(data.error || "Invalid login credentials");
       }
     } catch (err) {
@@ -45,82 +46,84 @@ const Login = () => {
           className="col-lg-6 d-none d-lg-flex align-items-center p-5 position-relative"
           style={{ backgroundColor: "#0e1121" }}
         >
-          <div className="p-5 z-1">
+          <div className="p-5 z-1 text-start">
             <h1
-              className="display-4 fw-bold text-white mb-3 lh-sm text-start"
+              className="display-4 fw-bold text-white mb-3 lh-sm"
               style={{ textTransform: "uppercase" }}
             >
-              Secure Your
-              <br /> Next <span style={{ color: "#05d9c6" }}>Masterpiece</span>
-              <br /> Collection
+              Welcome Back to <br />
+              <span style={{ color: "#05d9c6" }}>Collectors.net</span>
             </h1>
-            <p className="lead text-white opacity-75 mb-5 text-start w-75">
-              The ultimate destination for elite collectors. Bid on rare anime
-              figurines, trading cards, and timeless artifacts.
+            <p className="lead text-white opacity-75 mb-5 w-75">
+              The premier destination for high-stakes collectible auctions. Log
+              in to manage your bids and explore new listings.
             </p>
           </div>
         </div>
 
         {/* RIGHT SIDE: Login Form */}
         <div className="col-lg-6 d-flex align-items-center justify-content-center p-5">
-          <div style={{ width: "100%", maxWidth: "420px" }}>
-            <div className="text-center mb-5">
-              <h2 className="text-white fw-bold mb-1">Welcome Back</h2>
+          <div style={{ width: "100%", maxWidth: "400px" }}>
+            <div className="text-center mb-4">
+              <h2 className="text-white fw-bold mb-1">Account Login</h2>
               <p className="text-white-50 small">
-                Login to access the collector's vault
+                Enter your credentials to enter the circle
               </p>
             </div>
 
             {error && (
-              <div
-                className="alert alert-danger py-2 small border-0 mb-4"
-                style={{
-                  backgroundColor: "rgba(220,53,69,0.1)",
-                  color: "#ff6b6b",
-                }}
-              >
+              <div className="alert alert-danger py-2 small text-center">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleLogin}>
+            <form onSubmit={handleLogin} autoComplete="off">
               <div className="mb-3 text-start">
-                <label className="text-white-50 small mb-1">Email</label>
-                <div className="input-group">
-                  <span className="input-group-text bg-dark border-secondary text-white-50">
-                    <i className="bi bi-envelope"></i>
-                  </span>
-                  <input
-                    type="email"
-                    className="form-control bg-dark border-secondary text-white py-3 shadow-none"
-                    placeholder="Enter your email here"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
+                <label className="text-white-50 small mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-control bg-dark border-secondary text-white py-2 shadow-none"
+                  placeholder="john@example.com"
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="off"
+                  required
+                />
               </div>
-              <div className="mb-4 text-start position-relative">
+
+              <div className="mb-2 text-start">
                 <label className="text-white-50 small mb-1">Password</label>
-                <div className="input-group">
-                  <span className="input-group-text bg-dark border-secondary text-white-50">
-                    <i className="bi bi-lock"></i>
-                  </span>
+
+                <div className="position-relative">
                   <input
-                    type="password"
-                    className="form-control bg-dark border-secondary text-white py-3 shadow-none"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    className="form-control bg-dark border-secondary text-white py-2 pe-5 shadow-none"
                     placeholder="••••••••"
-                    value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                     required
                   />
+                  {/* SKY BLUE EYE TOGGLE */}
+                  <i
+                    className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"} position-absolute top-50 end-0 translate-middle-y me-3`}
+                    style={{
+                      cursor: "pointer",
+                      color: "#05d9c6",
+                      fontSize: "1.2rem",
+                      zIndex: 10,
+                    }}
+                    onClick={() => setShowPassword(!showPassword)}
+                  ></i>
                 </div>
-                <div className="text-end mt-1">
+
+                <div className="mt-3 text-end">
                   <Link
                     to="/forgotPassword"
-                    icon="forgotPassword"
                     className="text-decoration-none small"
-                    style={{ color: "#05d9c6" }}
+                    style={{ color: "#05d9c6", fontSize: "13px" }}
                   >
                     Forgot Password?
                   </Link>
@@ -129,7 +132,7 @@ const Login = () => {
 
               <button
                 type="submit"
-                className="btn w-100 fw-bold py-3 mb-4 rounded-3 text-dark transition-all"
+                className="btn w-100 fw-bold py-3 mt-4 mb-4 rounded-3 text-dark transition-all"
                 style={{
                   background: "linear-gradient(45deg, #05d9c6, #00bfaf)",
                   border: "none",

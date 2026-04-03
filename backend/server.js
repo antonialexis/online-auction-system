@@ -51,18 +51,47 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// 3. REGISTER ROUTE
+// 3. REGISTER ROUTE (Updated to match new schema)
 app.post("/api/register", async (req, res) => {
-  const { first_name, last_name, email, password } = req.body;
+  const {
+    first_name,
+    last_name,
+    email,
+    contact_number,
+    hobbies,
+    gender,
+    password,
+  } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     await db.query(
-      "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-      [first_name, last_name, email, hashedPassword],
+      "INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        first_name,
+        last_name,
+        email,
+        contact_number,
+        hobbies,
+        gender,
+        hashedPassword,
+      ],
     );
     res.status(201).json({ message: "User registered successfully!" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Registration failed!" });
+  }
+});
+
+// GET route to fetch all predefined hobbies
+app.get("/api/hobbies", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT hobby_name FROM hobbies ORDER BY hobby_name ASC",
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch hobbies" });
   }
 });
 
