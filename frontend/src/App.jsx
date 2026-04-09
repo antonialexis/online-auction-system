@@ -6,6 +6,7 @@ import HomePage from "./pages/homepage";
 import BidHistory from "./pages/bidHistory"; 
 import MarketPage from "./pages/marketPage";
 import ItemCard from "./components/itemcards";
+import AboutPage from "./pages/about";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/market" element={<MarketPage />} />
         <Route path="/bidHistory" element={<BidHistory />} />
         <Route path="/item/:id" element={<ItemCard />} />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </Router>
   );
