@@ -1,33 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const navigate = useNavigate();
 
-  // 1. Setup State for form fields
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
-    phone: "",
-    birthday: "",
+    contact_number: "",
     hobbies: "",
-    address: "",
-    role: "buyer",
+    gender: "",
     password: "",
     confirm_password: "",
   });
+
+  const [hobbiesList, setHobbiesList] = useState([]);
   const [error, setError] = useState("");
 
-  // 2. Handle input changes
+  // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const fetchHobbies = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/hobbies");
+        if (response.ok) {
+          const data = await response.json();
+          setHobbiesList(data);
+        }
+      } catch (err) {
+        console.error("Could not load hobbies:", err);
+      }
+    };
+    fetchHobbies();
+  }, []);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. Handle Form Submission
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (formData.password !== formData.confirm_password) {
+      setError("Passwords do not match!");
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:5000/api/register", {
@@ -40,7 +61,7 @@ const Signup = () => {
 
       if (response.ok) {
         alert("Account created successfully! Welcome to the circle.");
-        navigate("/"); // Redirect to Login page
+        navigate("/");
       } else {
         setError(data.error || "Registration failed");
       }
@@ -50,93 +71,187 @@ const Signup = () => {
   };
 
   return (
-    <div className="container-fluid min-vh-100 p-0" style={{ backgroundColor: "#090b14" }}>
-      <div className="row g-0 min-vh-100">
-        
-        {/* LEFT SIDE: Branding (Hidden on mobile for better scroll) */}
-        <div className="col-lg-5 d-none d-lg-flex align-items-center p-5" style={{ backgroundColor: "#0e1121" }}>
+    <div
+      className="container-fluid vh-100 p-0"
+      style={{ backgroundColor: "#090b14" }}
+    >
+      <div className="row g-0 h-100">
+        {/* LEFT SIDE: Branding */}
+        <div
+          className="col-lg-6 d-none d-lg-flex align-items-center p-5"
+          style={{ backgroundColor: "#0e1121" }}
+        >
           <div className="p-5 text-start">
-            <h1 className="display-4 fw-bold text-white mb-3" style={{ textTransform: "uppercase" }}>
-              Join the <span style={{ color: "#05d9c6" }}>Elite</span><br /> Collector Circle
+            <h1
+              className="display-4 fw-bold text-white mb-3 lh-sm"
+              style={{ textTransform: "uppercase" }}
+            >
+              Join the <span style={{ color: "#05d9c6" }}>Elite</span>
+              <br /> Collector Circle
             </h1>
-            <p className="lead text-white opacity-75 mb-5">
-              Create your account to track rare items, list your own collectibles, and participate in high-stakes bidding.
+            <p className="lead text-white opacity-75 mb-5 w-75">
+              Track rare items, list collectibles, and participate in live
+              high-stakes bidding.
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: Expanded Signup Form */}
-        <div className="col-lg-7 d-flex align-items-center justify-content-center p-4 p-md-5">
-          <div style={{ width: "100%", maxWidth: "650px" }}>
+        {/* RIGHT SIDE: Signup Form */}
+        <div className="col-lg-6 d-flex align-items-center justify-content-center p-5">
+          <div style={{ width: "100%", maxWidth: "550px" }}>
             <div className="text-center mb-4">
               <h2 className="text-white fw-bold mb-1">Create Account</h2>
-              <p className="text-white-50 small">Fill in the details to join Collectors.net</p>
+              <p className="text-white-50 small">
+                Join the collectors' network today
+              </p>
             </div>
 
-            {error && <div className="alert alert-danger py-2 small">{error}</div>}
+            {error && (
+              <div className="alert alert-danger py-2 small text-center">
+                {error}
+              </div>
+            )}
 
-            <form onSubmit={handleSignup} className="row">
-              
-              {/* ROLE TOGGLE */}
-              <div className="col-12 mb-4">
-                <label className="text-white-50 small d-block mb-2 text-start">I want to be a:</label>
-                <div className="btn-group w-100" role="group">
-                  <input 
-                    type="radio" className="btn-check" name="role" id="buyer" value="buyer" 
-                    checked={formData.role === "buyer"} onChange={handleChange} 
+            <form onSubmit={handleSignup}>
+              {/* Name Row */}
+              <div className="row">
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">First Name</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    className="form-control bg-dark border-secondary text-white py-2"
+                    placeholder="John"
+                    onChange={handleChange}
+                    required
                   />
-                  <label className="btn btn-outline-info fw-bold py-2" htmlFor="buyer">Buyer</label>
+                  <label className="btn btn-outline-info fw-bold py-2 mt-3" htmlFor="buyer">Buyer</label>
 
                   <input 
                     type="radio" className="btn-check" name="role" id="seller" value="seller" 
                     checked={formData.role === "seller"} onChange={handleChange} 
                   />
-                  <label className="btn btn-outline-info fw-bold py-2" htmlFor="seller">Seller</label>
+                  <label className="btn btn-outline-info fw-bold py-2 mt-3" htmlFor="seller">Seller</label>
                 </div>
               </div>
 
-              {/* NAME FIELDS */}
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">First Name</label>
-                <input type="text" name="first_name" className="form-control bg-dark border-secondary text-white py-2" placeholder="John" onChange={handleChange} required />
-              </div>
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Last Name</label>
-                <input type="text" name="last_name" className="form-control bg-dark border-secondary text-white py-2" placeholder="Doe" onChange={handleChange} required />
-              </div>
-
-              {/* CONTACT & INFO */}
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Email Address</label>
-                <input type="email" name="email" className="form-control bg-dark border-secondary text-white py-2" placeholder="john@example.com" onChange={handleChange} required />
-              </div>
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Phone Number</label>
-                <input type="tel" name="phone" className="form-control bg-dark border-secondary text-white py-2" placeholder="+1 234..." onChange={handleChange} required />
-              </div>
-
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Birthday</label>
-                <input type="date" name="birthday" className="form-control bg-dark border-secondary text-white py-2" onChange={handleChange} required />
-              </div>
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Hobbies</label>
-                <input type="text" name="hobbies" className="form-control bg-dark border-secondary text-white py-2" placeholder="Anime, TCG, Art" onChange={handleChange} />
-              </div>
-
-              <div className="col-12 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Address</label>
-                <textarea name="address" rows="2" className="form-control bg-dark border-secondary text-white py-2" placeholder="123 Street, City, Country" onChange={handleChange} required></textarea>
+              {/* Email and Contact Row */}
+              <div className="row">
+                <div className="col-md-7 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="form-control bg-dark border-secondary text-white py-2"
+                    placeholder="john@example.com"
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="col-md-5 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">
+                    Contact Number
+                  </label>
+                  <input
+                    type="text"
+                    name="contact_number"
+                    className="form-control bg-dark border-secondary text-white py-2"
+                    placeholder="09123456789"
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
               </div>
 
-              {/* PASSWORD FIELDS */}
-              <div className="col-md-6 mb-3 text-start">
-                <label className="text-white-50 small mb-1">Password</label>
-                <input type="password" name="password" className="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" onChange={handleChange} required />
+              {/* Hobbies and Gender Row */}
+              <div className="row">
+                <div className="col-md-7 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">
+                    Hobby / Interest
+                  </label>
+                  <input
+                    type="text"
+                    name="hobbies"
+                    list="hobby-options"
+                    className="form-control bg-dark border-secondary text-white py-2"
+                    placeholder="Search or type..."
+                    onChange={handleChange}
+                    autoComplete="off"
+                  />
+                  <datalist id="hobby-options">
+                    {hobbiesList.map((hobby, idx) => (
+                      <option key={idx} value={hobby.hobby_name} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="col-md-5 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Gender</label>
+                  <select
+                    name="gender"
+                    className="form-select bg-dark border-secondary text-white py-2"
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
-              <div className="col-md-6 mb-4 text-start">
-                <label className="text-white-50 small mb-1">Confirm Password</label>
-                <input type="password" name="confirm_password" className="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" onChange={handleChange} required />
+
+              {/* Password Row with Sky Blue Toggles */}
+              <div className="row">
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Password</label>
+                  <div className="position-relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      className="form-control bg-dark border-secondary text-white py-2 pe-5"
+                      placeholder="••••••••"
+                      onChange={handleChange}
+                      required
+                    />
+                    <i
+                      className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"} position-absolute top-50 end-0 translate-middle-y me-3`}
+                      style={{
+                        cursor: "pointer",
+                        color: "#05d9c6",
+                        fontSize: "1.1rem",
+                      }}
+                      onClick={() => setShowPassword(!showPassword)}
+                    ></i>
+                  </div>
+                </div>
+                <div className="col-md-6 mb-4 text-start">
+                  <label className="text-white-50 small mb-1">
+                    Confirm Password
+                  </label>
+                  <div className="position-relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirm_password"
+                      className="form-control bg-dark border-secondary text-white py-2 pe-5"
+                      placeholder="••••••••"
+                      onChange={handleChange}
+                      required
+                    />
+                    <i
+                      className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"} position-absolute top-50 end-0 translate-middle-y me-3`}
+                      style={{
+                        cursor: "pointer",
+                        color: "#05d9c6",
+                        fontSize: "1.1rem",
+                      }}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                    ></i>
+                  </div>
+                </div>
               </div>
 
               <button
