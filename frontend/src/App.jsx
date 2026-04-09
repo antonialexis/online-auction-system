@@ -2,8 +2,10 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Signup from "./pages/register";
 import ForgotPassword from "./pages/forgotpassword";
-import HomePage from "./pages/homepage"; // Kept as homepage
-import Dashboard from "./pages/dashboard";
+import HomePage from "./pages/homepage";
+import BidHistory from "./pages/bidHistory"; 
+import MarketPage from "./pages/marketPage";
+import ItemCard from "./components/itemcards";
 
 function App() {
   return (
@@ -13,7 +15,9 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgotPassword" element={<ForgotPassword />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/market" element={<MarketPage />} />
+        <Route path="/bidHistory" element={<BidHistory />} />
+        <Route path="/item/:id" element={<ItemCard />} />
       </Routes>
     </Router>
   );

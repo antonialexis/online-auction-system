@@ -33,11 +33,11 @@ const Header = () => {
           </NavLink>
 
           <NavLink
-            to="/marketplace"
+            to="/market"
             className="text-white text-decoration-none fw-bold"
             style={({ isActive }) => (isActive ? activeStyle : { opacity: "0.7" })}
           >
-            Marketplace
+            Market
           </NavLink>
 
           <NavLink
@@ -49,11 +49,11 @@ const Header = () => {
           </NavLink>
 
           <NavLink
-            to="/dashboard"
+            to="/bidHistory"
             className="text-white text-decoration-none fw-bold"
             style={({ isActive }) => (isActive ? activeStyle : { opacity: "0.7" })}
           >
-            Dashboard
+            My Bids
           </NavLink>
         </nav>
         

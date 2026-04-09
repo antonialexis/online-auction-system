@@ -9,7 +9,13 @@ const Signup = () => {
     first_name: "",
     last_name: "",
     email: "",
+    phone: "",
+    birthday: "",
+    hobbies: "",
+    address: "",
+    role: "buyer",
     password: "",
+    confirm_password: "",
   });
   const [error, setError] = useState("");
 
@@ -44,119 +50,106 @@ const Signup = () => {
   };
 
   return (
-    <div
-      className="container-fluid vh-100 p-0"
-      style={{ backgroundColor: "#090b14" }}
-    >
-      <div className="row g-0 h-100">
-        {/* LEFT SIDE: Branding */}
-        <div
-          className="col-lg-6 d-none d-lg-flex align-items-center p-5 position-relative"
-          style={{ backgroundColor: "#0e1121" }}
-        >
-          <div className="p-5 z-1 text-start">
-            <h1
-              className="display-4 fw-bold text-white mb-3 lh-sm"
-              style={{ textTransform: "uppercase" }}
-            >
-              Join the <span style={{ color: "#05d9c6" }}>Elite</span>
-              <br /> Collector
-              <br /> Circle
+    <div className="container-fluid min-vh-100 p-0" style={{ backgroundColor: "#090b14" }}>
+      <div className="row g-0 min-vh-100">
+        
+        {/* LEFT SIDE: Branding (Hidden on mobile for better scroll) */}
+        <div className="col-lg-5 d-none d-lg-flex align-items-center p-5" style={{ backgroundColor: "#0e1121" }}>
+          <div className="p-5 text-start">
+            <h1 className="display-4 fw-bold text-white mb-3" style={{ textTransform: "uppercase" }}>
+              Join the <span style={{ color: "#05d9c6" }}>Elite</span><br /> Collector Circle
             </h1>
-            <p className="lead text-white opacity-75 mb-5 w-75">
-              Create your account to track rare items, list your own
-              collectibles, and participate in live high-stakes bidding.
+            <p className="lead text-white opacity-75 mb-5">
+              Create your account to track rare items, list your own collectibles, and participate in high-stakes bidding.
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: Signup Form */}
-        <div className="col-lg-6 d-flex align-items-center justify-content-center p-5">
-          <div style={{ width: "100%", maxWidth: "500px" }}>
+        {/* RIGHT SIDE: Expanded Signup Form */}
+        <div className="col-lg-7 d-flex align-items-center justify-content-center p-4 p-md-5">
+          <div style={{ width: "100%", maxWidth: "650px" }}>
             <div className="text-center mb-4">
               <h2 className="text-white fw-bold mb-1">Create Account</h2>
-              <p className="text-white-50 small">
-                Fill in the details to join Collectors.net
-              </p>
+              <p className="text-white-50 small">Fill in the details to join Collectors.net</p>
             </div>
 
-            {error && (
-              <div className="alert alert-danger py-2 small">{error}</div>
-            )}
+            {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
-            <form onSubmit={handleSignup}>
-              <div className="row">
-                <div className="col-md-6 mb-3 text-start">
-                  <label className="text-white-50 small mb-1">First Name</label>
-                  <input
-                    type="text"
-                    name="first_name"
-                    className="form-control bg-dark border-secondary text-white py-2"
-                    placeholder="John"
-                    onChange={handleChange}
-                    required
+            <form onSubmit={handleSignup} className="row">
+              
+              {/* ROLE TOGGLE */}
+              <div className="col-12 mb-4">
+                <label className="text-white-50 small d-block mb-2 text-start">I want to be a:</label>
+                <div className="btn-group w-100" role="group">
+                  <input 
+                    type="radio" className="btn-check" name="role" id="buyer" value="buyer" 
+                    checked={formData.role === "buyer"} onChange={handleChange} 
                   />
-                </div>
-                <div className="col-md-6 mb-3 text-start">
-                  <label className="text-white-50 small mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    className="form-control bg-dark border-secondary text-white py-2"
-                    placeholder="Doe"
-                    onChange={handleChange}
-                    required
+                  <label className="btn btn-outline-info fw-bold py-2" htmlFor="buyer">Buyer</label>
+
+                  <input 
+                    type="radio" className="btn-check" name="role" id="seller" value="seller" 
+                    checked={formData.role === "seller"} onChange={handleChange} 
                   />
+                  <label className="btn btn-outline-info fw-bold py-2" htmlFor="seller">Seller</label>
                 </div>
               </div>
 
-              <div className="mb-3 text-start">
-                <label className="text-white-50 small mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  className="form-control bg-dark border-secondary text-white py-2"
-                  placeholder="john@example.com"
-                  onChange={handleChange}
-                  required
-                />
+              {/* NAME FIELDS */}
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">First Name</label>
+                <input type="text" name="first_name" className="form-control bg-dark border-secondary text-white py-2" placeholder="John" onChange={handleChange} required />
+              </div>
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Last Name</label>
+                <input type="text" name="last_name" className="form-control bg-dark border-secondary text-white py-2" placeholder="Doe" onChange={handleChange} required />
               </div>
 
-              <div className="mb-4 text-start">
+              {/* CONTACT & INFO */}
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Email Address</label>
+                <input type="email" name="email" className="form-control bg-dark border-secondary text-white py-2" placeholder="john@example.com" onChange={handleChange} required />
+              </div>
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Phone Number</label>
+                <input type="tel" name="phone" className="form-control bg-dark border-secondary text-white py-2" placeholder="+1 234..." onChange={handleChange} required />
+              </div>
+
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Birthday</label>
+                <input type="date" name="birthday" className="form-control bg-dark border-secondary text-white py-2" onChange={handleChange} required />
+              </div>
+              <div className="col-md-6 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Hobbies</label>
+                <input type="text" name="hobbies" className="form-control bg-dark border-secondary text-white py-2" placeholder="Anime, TCG, Art" onChange={handleChange} />
+              </div>
+
+              <div className="col-12 mb-3 text-start">
+                <label className="text-white-50 small mb-1">Address</label>
+                <textarea name="address" rows="2" className="form-control bg-dark border-secondary text-white py-2" placeholder="123 Street, City, Country" onChange={handleChange} required></textarea>
+              </div>
+
+              {/* PASSWORD FIELDS */}
+              <div className="col-md-6 mb-3 text-start">
                 <label className="text-white-50 small mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  className="form-control bg-dark border-secondary text-white py-2"
-                  placeholder="••••••••"
-                  onChange={handleChange}
-                  required
-                />
+                <input type="password" name="password" className="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" onChange={handleChange} required />
+              </div>
+              <div className="col-md-6 mb-4 text-start">
+                <label className="text-white-50 small mb-1">Confirm Password</label>
+                <input type="password" name="confirm_password" className="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" onChange={handleChange} required />
               </div>
 
               <button
                 type="submit"
                 className="btn w-100 fw-bold py-3 mb-4 rounded-3 text-dark"
-                style={{
-                  background: "linear-gradient(45deg, #05d9c6, #00bfaf)",
-                  border: "none",
-                }}
+                style={{ background: "linear-gradient(45deg, #05d9c6, #00bfaf)", border: "none" }}
               >
                 Register Account Now
               </button>
             </form>
 
             <div className="text-center text-white-50 small">
-              Already have an account?{" "}
-              <Link
-                to="/"
-                className="text-decoration-none fw-bold"
-                style={{ color: "#05d9c6" }}
-              >
-                Log In
-              </Link>
+              Already have an account? <Link to="/" className="text-decoration-none fw-bold" style={{ color: "#05d9c6" }}>Log In</Link>
             </div>
           </div>
         </div>
