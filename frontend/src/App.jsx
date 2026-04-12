@@ -3,10 +3,13 @@ import Login from "./pages/login";
 import Signup from "./pages/register";
 import ForgotPassword from "./pages/forgotpassword";
 import HomePage from "./pages/homepage";
-import BidHistory from "./pages/bidHistory"; 
+import Bids from "./pages/bids"; 
 import MarketPage from "./pages/marketPage";
 import ItemCard from "./components/itemcards";
 import AboutPage from "./pages/about";
+import CreateAuction from "./pages/createAuction";
+import ProfilePage from "./pages/profilePage";
+import HistoryPage from "./pages/history";
 
 function App() {
   return (
@@ -17,9 +20,12 @@ function App() {
         <Route path="/forgotPassword" element={<ForgotPassword />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/market" element={<MarketPage />} />
-        <Route path="/bidHistory" element={<BidHistory />} />
+        <Route path="/bids" element={<Bids />} />
         <Route path="/item/:id" element={<ItemCard />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/create-auction" element={<CreateAuction />} /> 
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/history" element={<HistoryPage />} />
       </Routes>
     </Router>
   );

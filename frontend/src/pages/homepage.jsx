@@ -61,8 +61,8 @@ const HomePage = () => {
               Buy rare digital and physical collectibles in here to add
               to your collection.
             </p>
-           <div className="d-flex gap-3 justify-content-start">
 
+           <div className="d-flex gap-3 justify-content-start">
               <button
                 onClick={scrollToItems}
                 className="btn btn-primary text-white fw-bold px-4 py-3"
@@ -70,6 +70,11 @@ const HomePage = () => {
               >
                 Explore limited products
               </button>
+
+              <button onClick={() => navigate('/create-auction')} className="btn btn-outline-light fw-bold px-4 py-3" style={{ borderRadius: "8px" }}>
+                  Start Selling
+              </button>
+
             </div>
 
             {/* NUMBERS DISPLAY */}

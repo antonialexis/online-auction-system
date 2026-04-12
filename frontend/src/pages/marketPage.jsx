@@ -1,9 +1,12 @@
 import React, { useState } from 'react'; 
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/header';
 import ItemCard from '../components/itemcards'; 
 import ItemModal from '../components/itemModal';
 
+
 const MarketPage = () => {
+    const navigate = useNavigate();
     const [selectedItem, setSelectedItem] = useState(null); 
 
     const allItems = [
@@ -79,6 +82,16 @@ const MarketPage = () => {
           onClose={() => setSelectedItem(null)} 
         />
       )}
+
+    <button 
+        onClick={() => navigate('/create-auction')}
+        className="btn btn-primary position-fixed bottom-0 end-0 m-4 shadow-lg d-flex align-items-center justify-content-center"
+        style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#05d9c6', color: '#000', border: 'none', zIndex: 1000 }}
+        title="Sell an Item"
+      >
+        <i className="bi bi-plus-lg fs-3"></i>
+      </button>
+
     </div>
   );
 };
