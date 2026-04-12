@@ -1,7 +1,8 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/header";
 import ItemCard from "../components/itemcards";
+import ItemModal from "../components/itemModal";
 
 // Simulated data for your new categories and items (Items, Bids requirements)
 const collectorItems = [
@@ -35,7 +36,7 @@ const collectorItems = [
 ];
 
 const HomePage = () => {
-
+  const [selectedItem, setSelectedItem] = useState(null);
   const limitedItemsRef = useRef(null);
   const navigate = useNavigate();
 
@@ -60,8 +61,8 @@ const HomePage = () => {
               Buy rare digital and physical collectibles in here to add
               to your collection.
             </p>
-           <div className="d-flex gap-3 justify-content-start">
 
+           <div className="d-flex gap-3 justify-content-start">
               <button
                 onClick={scrollToItems}
                 className="btn btn-primary text-white fw-bold px-4 py-3"
@@ -69,6 +70,11 @@ const HomePage = () => {
               >
                 Explore limited products
               </button>
+
+              <button onClick={() => navigate('/create-auction')} className="btn btn-outline-light fw-bold px-4 py-3" style={{ borderRadius: "8px" }}>
+                  Start Selling
+              </button>
+
             </div>
 
             {/* NUMBERS DISPLAY */}
@@ -97,6 +103,7 @@ const HomePage = () => {
                   "2px solid rgba(217, 70, 239, 0.4)" /* Pink border outline */,
                 borderRadius: "24px",
               }}
+              onClick={() => setSelectedItem(collectorItems[1])}
             >
               <img
                 src="https://placehold.co/600x600/png?text=Featured+Lot"
@@ -184,7 +191,7 @@ const HomePage = () => {
             </h2>
 
             <button 
-              onClick={() => navigate('/marketplace')} 
+              onClick={() => navigate('/market')} 
               className="btn btn-outline-light btn-sm rounded-pill fw-bold"
             >
               Explore More <i className="bi bi-arrow-right"></i>
@@ -193,12 +200,24 @@ const HomePage = () => {
 
         <div className="row row-cols-1 row-cols-md-3 g-4">
             {collectorItems.map((item) => (
-              <div className="col" key={item.id}>
+              <div 
+                className="col" 
+                key={item.id} 
+                onClick={() => setSelectedItem(item)} 
+                style={{ cursor: "pointer" }}
+              >
                 <ItemCard item={item} />
               </div>
             ))}
         </div>
       </section>
+
+      {selectedItem && (
+        <ItemModal 
+          item={selectedItem} 
+          onClose={() => setSelectedItem(null)} 
+        />
+      )}
 
       <footer className="bg-dark text-white py-3 mt-auto" style={{ borderTop: "2px solid rgba(255, 255, 255, 0.1)" }}>
         <div className="container text-center">

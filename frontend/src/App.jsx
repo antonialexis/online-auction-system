@@ -2,8 +2,14 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Signup from "./pages/register";
 import ForgotPassword from "./pages/forgotpassword";
-import HomePage from "./pages/homepage"; // Kept as homepage
-import Dashboard from "./pages/dashboard";
+import HomePage from "./pages/homepage";
+import Bids from "./pages/bids"; 
+import MarketPage from "./pages/marketPage";
+import ItemCard from "./components/itemcards";
+import AboutPage from "./pages/about";
+import CreateAuction from "./pages/createAuction";
+import ProfilePage from "./pages/profilePage";
+import HistoryPage from "./pages/history";
 
 function App() {
   return (
@@ -13,7 +19,13 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgotPassword" element={<ForgotPassword />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/market" element={<MarketPage />} />
+        <Route path="/bids" element={<Bids />} />
+        <Route path="/item/:id" element={<ItemCard />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/create-auction" element={<CreateAuction />} /> 
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/history" element={<HistoryPage />} />
       </Routes>
     </Router>
   );

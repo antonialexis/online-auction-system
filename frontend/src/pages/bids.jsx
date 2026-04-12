@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import Header from "../components/header"; // Fixed casing to match component
+import Header from "../components/header"; 
 
-const Dashboard = () => {
+const Bids = () => {
   const [activeTab, setActiveTab] = useState("bidding");
 
   return (
@@ -185,4 +185,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Bids;
