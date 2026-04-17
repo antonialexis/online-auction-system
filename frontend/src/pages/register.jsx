@@ -125,13 +125,28 @@ const Signup = () => {
                     onChange={handleChange}
                     required
                   />
-                  <label className="btn btn-outline-info fw-bold py-2 mt-3" htmlFor="buyer">Buyer</label>
+                  <label
+                    className="btn btn-outline-info fw-bold py-2 mt-3"
+                    htmlFor="buyer"
+                  >
+                    Buyer
+                  </label>
 
-                  <input 
-                    type="radio" className="btn-check" name="role" id="seller" value="seller" 
-                    checked={formData.role === "seller"} onChange={handleChange} 
+                  <input
+                    type="radio"
+                    className="btn-check"
+                    name="role"
+                    id="seller"
+                    value="seller"
+                    checked={formData.role === "seller"}
+                    onChange={handleChange}
                   />
-                  <label className="btn btn-outline-info fw-bold py-2 mt-3" htmlFor="seller">Seller</label>
+                  <label
+                    className="btn btn-outline-info fw-bold py-2 mt-3"
+                    htmlFor="seller"
+                  >
+                    Seller
+                  </label>
                 </div>
               </div>
 
@@ -257,14 +272,24 @@ const Signup = () => {
               <button
                 type="submit"
                 className="btn w-100 fw-bold py-3 mb-4 rounded-3 text-dark"
-                style={{ background: "linear-gradient(45deg, #05d9c6, #00bfaf)", border: "none" }}
+                style={{
+                  background: "linear-gradient(45deg, #05d9c6, #00bfaf)",
+                  border: "none",
+                }}
               >
                 Register Account Now
               </button>
             </form>
 
             <div className="text-center text-white-50 small">
-              Already have an account? <Link to="/" className="text-decoration-none fw-bold" style={{ color: "#05d9c6" }}>Log In</Link>
+              Already have an account?{" "}
+              <Link
+                to="/"
+                className="text-decoration-none fw-bold"
+                style={{ color: "#05d9c6" }}
+              >
+                Log In
+              </Link>
             </div>
           </div>
         </div>
