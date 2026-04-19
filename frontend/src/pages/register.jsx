@@ -13,12 +13,11 @@ const Signup = () => {
     gender: "",
     password: "",
     confirm_password: "",
+    role: "", // Captures "buyer" or "seller"
   });
 
   const [hobbiesList, setHobbiesList] = useState([]);
   const [error, setError] = useState("");
-
-  // State for toggling password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -45,11 +44,26 @@ const Signup = () => {
     e.preventDefault();
     setError("");
 
+    // 1. Validation Logic
+    if (!formData.role) {
+      setError("Please select a role (Buyer or Seller).");
+      return;
+    }
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (!specialCharRegex.test(formData.password)) {
+      setError("Password must contain at least one special character.");
+      return;
+    }
     if (formData.password !== formData.confirm_password) {
-      setError("Passwords do not match!");
+      setError("Passwords do not match.");
       return;
     }
 
+    // 2. API Submission
     try {
       const response = await fetch("http://localhost:5000/api/register", {
         method: "POST",
@@ -60,13 +74,13 @@ const Signup = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Account created successfully! Welcome to the circle.");
+        alert("Registration successful! Redirecting to login...");
         navigate("/");
       } else {
-        setError(data.error || "Registration failed");
+        setError(data.error || "Registration failed.");
       }
     } catch (err) {
-      setError("Cannot connect to server. Is the backend running?");
+      setError("Server connection failed. Make sure backend is running.");
     }
   };
 
@@ -76,7 +90,6 @@ const Signup = () => {
       style={{ backgroundColor: "#090b14" }}
     >
       <div className="row g-0 h-100">
-        {/* LEFT SIDE: Branding */}
         <div
           className="col-lg-6 d-none d-lg-flex align-items-center p-5"
           style={{ backgroundColor: "#0e1121" }}
@@ -86,8 +99,8 @@ const Signup = () => {
               className="display-4 fw-bold text-white mb-3 lh-sm"
               style={{ textTransform: "uppercase" }}
             >
-              Join the <span style={{ color: "#05d9c6" }}>Elite</span>
-              <br /> Collector Circle
+              Join the <span style={{ color: "#05d9c6" }}>Elite</span> <br />{" "}
+              Collector Circle
             </h1>
             <p className="lead text-white opacity-75 mb-5 w-75">
               Track rare items, list collectibles, and participate in live
@@ -96,7 +109,6 @@ const Signup = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE: Signup Form */}
         <div className="col-lg-6 d-flex align-items-center justify-content-center p-5">
           <div style={{ width: "100%", maxWidth: "550px" }}>
             <div className="text-center mb-4">
@@ -115,7 +127,7 @@ const Signup = () => {
             <form onSubmit={handleSignup}>
               {/* Name Row */}
               <div className="row">
-                <div className="col-md-6 mb-3 text-start">
+                <div className="col-md-12 mb-3 text-start">
                   <label className="text-white-50 small mb-1">First Name</label>
                   <input
                     type="text"
@@ -125,28 +137,48 @@ const Signup = () => {
                     onChange={handleChange}
                     required
                   />
-                  <label
-                    className="btn btn-outline-info fw-bold py-2 mt-3"
-                    htmlFor="buyer"
-                  >
-                    Buyer
-                  </label>
+                </div>
+              </div>
 
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="role"
-                    id="seller"
-                    value="seller"
-                    checked={formData.role === "seller"}
-                    onChange={handleChange}
-                  />
-                  <label
-                    className="btn btn-outline-info fw-bold py-2 mt-3"
-                    htmlFor="seller"
-                  >
-                    Seller
+              {/* ROLE SELECTION */}
+              <div className="row mb-3">
+                <div className="col-12 text-start">
+                  <label className="text-white-50 small mb-2 d-block">
+                    I am a...
                   </label>
+                  <div className="btn-group w-100" role="group">
+                    <input
+                      type="radio"
+                      className="btn-check"
+                      name="role"
+                      id="buyer"
+                      value="buyer"
+                      onChange={handleChange}
+                      checked={formData.role === "buyer"}
+                    />
+                    <label
+                      className="btn btn-outline-info fw-bold"
+                      htmlFor="buyer"
+                    >
+                      Buyer
+                    </label>
+
+                    <input
+                      type="radio"
+                      className="btn-check"
+                      name="role"
+                      id="seller"
+                      value="seller"
+                      onChange={handleChange}
+                      checked={formData.role === "seller"}
+                    />
+                    <label
+                      className="btn btn-outline-info fw-bold"
+                      htmlFor="seller"
+                    >
+                      Seller
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -217,7 +249,7 @@ const Signup = () => {
                 </div>
               </div>
 
-              {/* Password Row with Sky Blue Toggles */}
+              {/* Password Row */}
               <div className="row">
                 <div className="col-md-6 mb-3 text-start">
                   <label className="text-white-50 small mb-1">Password</label>
@@ -271,7 +303,7 @@ const Signup = () => {
 
               <button
                 type="submit"
-                className="btn w-100 fw-bold py-3 mb-4 rounded-3 text-dark"
+                className="btn w-100 fw-bold py-3 mb-2 rounded-3 text-dark"
                 style={{
                   background: "linear-gradient(45deg, #05d9c6, #00bfaf)",
                   border: "none",
@@ -279,18 +311,19 @@ const Signup = () => {
               >
                 Register Account Now
               </button>
-            </form>
 
-            <div className="text-center text-white-50 small">
-              Already have an account?{" "}
-              <Link
-                to="/"
-                className="text-decoration-none fw-bold"
-                style={{ color: "#05d9c6" }}
-              >
-                Log In
-              </Link>
-            </div>
+              {/* Existing User Link */}
+              <div className="text-end mt-2">
+                <span className="text-white-50 small">Existing User? </span>
+                <Link
+                  to="/"
+                  className="text-decoration-none fw-bold"
+                  style={{ color: "#05d9c6" }}
+                >
+                  Login
+                </Link>
+              </div>
+            </form>
           </div>
         </div>
       </div>

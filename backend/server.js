@@ -1,57 +1,32 @@
 const express = require("express");
 const cors = require("cors");
-const db = require("./db");
 const bcrypt = require("bcrypt");
-const saltRounds = 10;
+const jwt = require("jsonwebtoken");
+const db = require("./db");
+require("dotenv").config();
 
 const app = express();
+const saltRounds = 10;
+const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
 
-// 1. Connection test
-app.get("/test-db", async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT 1 + 1 AS solution");
-    res.send({ message: "Database Connected!", detail: rows });
-  } catch (err) {
-    res.status(500).send({ error: err.message });
-  }
-});
+// --- MIDDLEWARE ---
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-// 2. FIXED LOGIN ROUTE
-app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    // Search by email ONLY first
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
+  if (!token) return res.status(401).json({ error: "Access Denied" });
 
-    if (rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password!" });
-    }
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ error: "Invalid Token" });
+    req.user = decoded;
+    next();
+  });
+};
 
-    const user = rows[0];
-
-    // Compare the plain text password from the user with the hashed password from the DB
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (isMatch) {
-      res.status(200).json({
-        message: "Login success",
-        user: { id: user.id, email: user.email },
-      });
-    } else {
-      res.status(401).json({ error: "Invalid email or password" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database error!" });
-  }
-});
-
-// 3. REGISTER ROUTE (Updated to match new schema)
+// --- AUTH ROUTES ---
 app.post("/api/register", async (req, res) => {
   const {
     first_name,
@@ -61,80 +36,124 @@ app.post("/api/register", async (req, res) => {
     hobbies,
     gender,
     password,
+    role,
   } = req.body;
+  if (!role) return res.status(400).json({ error: "Role is required." });
+
+  const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+  if (!specialCharRegex.test(password)) {
+    return res
+      .status(400)
+      .json({ error: "Password must contain a special character." });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    await db.query(
-      "INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        first_name,
-        last_name,
-        email,
-        contact_number,
-        hobbies,
-        gender,
-        hashedPassword,
-      ],
-    );
-    res.status(201).json({ message: "User registered successfully!" });
+    const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    await db.query(sql, [
+      first_name,
+      last_name,
+      email,
+      contact_number,
+      hobbies,
+      gender,
+      hashedPassword,
+      role,
+    ]);
+    res.status(201).json({ message: "Registered successfully!" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Registration failed!" });
+    res.status(500).json({ error: "Registration failed." });
   }
 });
 
-// GET route to fetch all predefined hobbies
-app.get("/api/hobbies", async (req, res) => {
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const [rows] = await db.query(
-      "SELECT hobby_name FROM hobbies ORDER BY hobby_name ASC",
-    );
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch hobbies" });
-  }
-});
+    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (rows.length === 0)
+      return res.status(401).json({ error: "Invalid credentials" });
 
-// 4. FORGOT PASSWORD ROUTE
-app.post("/api/forgot-password", async (req, res) => {
-  const { email, newPassword } = req.body;
-  try {
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-    const [result] = await db.query(
-      "UPDATE users SET password = ? WHERE email = ?",
-      [hashedNewPassword, email],
-    );
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    if (result.affectedRows > 0) {
-      res.status(200).json({ message: "Password updated successfully" });
+    if (isMatch) {
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
+      res
+        .status(200)
+        .json({ message: "Login successful", token, name: user.first_name });
     } else {
-      res.status(404).json({ error: "Email not found!" });
+      res.status(401).json({ error: "Invalid credentials" });
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error!" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// 5. GET ALL AUCTION ITEMS
-app.get("/api/items", async (req, res) => {
+// --- PROTECTED ROUTES ---
+app.get("/api/profile", verifyToken, async (req, res) => {
   try {
-    // JOIN to get the seller's name with item details
-    const [rows] = await db.query(`
-      SELECT 
-        items.*, 
-        users.first_name, 
-        users.last_name 
-      FROM items 
-      JOIN users ON items.seller_id = users.id
-      WHERE items.status = 'active'
-    `);
-
-    res.json(rows);
+    const [rows] = await db.query(
+      "SELECT first_name, last_name, email, contact_number, hobbies, gender FROM users WHERE id = ?",
+      [req.user.id],
+    );
+    if (rows.length === 0)
+      return res.status(404).json({ error: "User not found" });
+    res.status(200).json(rows[0]);
   } catch (err) {
-    console.error("Error fetching items:", err);
-    res.status(500).json({ error: "Failed to fetch auction items" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-app.listen(5000, () => console.log("Server is running on port 5000!"));
+app.put("/api/profile/update", verifyToken, async (req, res) => {
+  const { email, contact_number, hobbies } = req.body;
+  const userId = req.user.id;
+  const sql = `UPDATE users SET email = ?, contact_number = ?, hobbies = ? WHERE id = ?`;
+
+  db.query(sql, [email, contact_number, hobbies, userId], (err, result) => {
+    if (err) return res.status(500).json({ error: "Database update failed" });
+    if (result.affectedRows === 0)
+      return res.status(404).json({ error: "User not found" });
+    res.json({ message: "Profile updated successfully" });
+  });
+});
+
+app.post("/api/profile/change-password", verifyToken, async (req, res) => {
+  const { old_password, new_password } = req.body;
+  const userId = req.user.id;
+
+  if (!old_password || !new_password) {
+    return res.status(400).json({ message: "Both passwords are required" });
+  }
+
+  try {
+    // 1. Fetch current password
+    const [rows] = await db.query("SELECT password FROM users WHERE id = ?", [
+      userId,
+    ]);
+    if (rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    // 2. Verify old password
+    const valid = await bcrypt.compare(old_password, rows[0].password);
+    if (!valid)
+      return res.status(401).json({ message: "Incorrect current password" });
+
+    // 3. Hash and update
+    const newHash = await bcrypt.hash(new_password, 10);
+    await db.query("UPDATE users SET password = ? WHERE id = ?", [
+      newHash,
+      userId,
+    ]);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    res.status(500).json({ message: "Server error occurred" });
+  }
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
