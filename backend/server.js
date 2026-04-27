@@ -113,12 +113,17 @@ app.put("/api/profile/update", verifyToken, async (req, res) => {
   const userId = req.user.id;
   const sql = `UPDATE users SET email = ?, contact_number = ?, hobbies = ? WHERE id = ?`;
 
-  db.query(sql, [email, contact_number, hobbies, userId], (err, result) => {
-    if (err) return res.status(500).json({ error: "Database update failed" });
+  try {
+    const [result] = await db.query(sql, [email, contact_number, hobbies, userId]);
+    
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "User not found" });
+      
     res.json({ message: "Profile updated successfully" });
-  });
+  } catch (err) {
+    console.error("Update Error:", err);
+    res.status(500).json({ error: "Database update failed" });
+  }
 });
 
 app.post("/api/profile/change-password", verifyToken, async (req, res) => {

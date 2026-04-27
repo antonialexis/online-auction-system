@@ -216,7 +216,7 @@ const ProfilePage = () => {
                         className="form-control bg-dark text-white border-0 border-bottom"
                       />
                     ) : (
-                      <p className="fw-bold">{user[field] || "Not set"}</p>
+                      <p className="fw-bold">{user?.[field] || "Not set"}</p>
                     )}
                   </div>
                 ))}
