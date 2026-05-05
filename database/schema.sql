@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 -- 1. Create the Database
 CREATE DATABASE IF NOT EXISTS collectors_db;
 USE collectors_db;
@@ -32,48 +31,27 @@ INSERT IGNORE INTO hobbies (hobby_name) VALUES
 ('Retro Video Games'),
 ('Vinyl Records'),
 ('Antique Watches');
-=======
--- IMPORT THIS INTO YOUR SQL CLIENT
-CREATE DATABASE IF NOT EXISTS online_auction_system;
-USE online_auction_system;
-
-CREATE TABLE IF NOT EXISTS users (
+ -- Auctions Table
+CREATE TABLE IF NOT EXISTS auctions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    category_id INT,
-    seller_id INT,
-    title VARCHAR(100) NOT NULL,
+    seller_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
     description TEXT,
-    starting_price DECIMAL(10, 2) NOT NULL,
-    current_bid DECIMAL(10, 2) DEFAULT 0.00,
+    starting_bid DECIMAL(10, 2) NOT NULL,
+    current_bid DECIMAL(10, 2) DEFAULT NULL,
     end_time DATETIME NOT NULL,
-    item_condition VARCHAR(50),
-    image_url VARCHAR(255),
-    status ENUM('active', 'ended') DEFAULT 'active',
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    status ENUM('active', 'closed') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+--  Bids Table
 CREATE TABLE IF NOT EXISTS bids (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    item_id INT,
-    bidder_id INT,
+    auction_id INT NOT NULL,
+    bidder_id INT NOT NULL,
     bid_amount DECIMAL(10, 2) NOT NULL,
     bid_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+    FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
     FOREIGN KEY (bidder_id) REFERENCES users(id) ON DELETE CASCADE
 );
->>>>>>> 17f59e1c0cf4568556e4a5349ef34c299d761a26

@@ -160,5 +160,48 @@ app.post("/api/profile/change-password", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error occurred" });
   }
 });
+// --- AUCTION ROUTES ---
+app.post("/api/auctions/create", verifyToken, async (req, res) => {
+  const { title, description, starting_bid, end_time } = req.body;
+  const seller_id = req.user.id; // From verifyToken decoded JWT
 
+  try {
+    const sql = `INSERT INTO auctions (seller_id, title, description, starting_bid, current_bid, end_time) 
+                 VALUES (?, ?, ?, ?, ?, ?)`;
+    await db.query(sql, [seller_id, title, description, starting_bid, starting_bid, end_time]);
+    res.status(201).json({ message: "Auction created successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create auction." });
+  }
+});
+app.post("/api/bids/place", verifyToken, async (req, res) => {
+  const { auction_id, bid_amount } = req.body;
+  const bidder_id = req.user.id;
+
+  try {
+    // 1. Check current bid and end time
+    const [rows] = await db.query("SELECT current_bid, end_time, status FROM auctions WHERE id = ?", [auction_id]);
+    
+    if (rows.length === 0) return res.status(404).json({ error: "Auction not found." });
+    
+    const auction = rows[0];
+    if (auction.status === 'closed' || new Date(auction.end_time) < new Date()) {
+        return res.status(400).json({ error: "Auction has already ended." });
+    }
+
+    if (bid_amount <= auction.current_bid) {
+      return res.status(400).json({ error: "Bid must be higher than current bid." });
+    }
+
+    // 2. Insert into bids table and update auction's current_bid
+    await db.query("INSERT INTO bids (auction_id, bidder_id, bid_amount) VALUES (?, ?, ?)", 
+                  [auction_id, bidder_id, bid_amount]);
+    await db.query("UPDATE auctions SET current_bid = ? WHERE id = ?", [bid_amount, auction_id]);
+
+    res.status(200).json({ message: "Bid placed successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: "Bidding failed." });
+  }
+});
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

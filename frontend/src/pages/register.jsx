@@ -128,7 +128,7 @@ const Signup = () => {
               {/* Name Row */}
               <div className="row">
                 <div className="col-md-12 mb-3 text-start">
-                  <label className="text-white-50 small mb-1">First Name</label>
+                  <label className="text-white-50 small mb-1">Name</label>
                   <input
                     type="text"
                     name="first_name"
