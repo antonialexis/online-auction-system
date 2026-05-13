@@ -10,22 +10,39 @@ import AboutPage from "./pages/about";
 import CreateAuction from "./pages/createAuction";
 import ProfilePage from "./pages/profilePage";
 import HistoryPage from "./pages/history";
+import AdminPage from "./pages/adminPage";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import BanListener from "./components/BanListener";
 
 function App() {
   return (
     <Router>
+      <BanListener />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgotPassword" element={<ForgotPassword />} />
+
+        {/* Authenticated User Routes */}
         <Route path="/home" element={<HomePage />} />
         <Route path="/market" element={<MarketPage />} />
         <Route path="/bids" element={<Bids />} />
         <Route path="/item/:id" element={<ItemCard />} />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/create-auction" element={<CreateAuction />} /> 
+        <Route path="/create-auction" element={<CreateAuction />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/history" element={<HistoryPage />} />
+
+        {/* Admin-Only Route — protected by server-side role check */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminPage />
+            </ProtectedAdminRoute>
+          }
+        />
       </Routes>
     </Router>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import AdminBar from "./AdminBar";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -22,7 +23,9 @@ const Header = () => {
   };
 
   return (
-    <header
+    <>
+      <AdminBar />
+      <header
       className="py-3 sticky-top"
       style={{
         backgroundColor: "rgba(14, 17, 33, 0.8)",
@@ -85,27 +88,29 @@ const Header = () => {
 
         {/* PROFILE SECTION */}
         <div
-          className="d-flex align-items-center gap-2 ps-1 py-1 pe-2 rounded-pill"
-          onClick={() => navigate("/profile")}
+          className="d-flex align-items-center gap-3 p-2 rounded-4"
           style={{
             cursor: "pointer",
-            backgroundColor: "rgba(29, 70, 205, 0.1)",
-            border: "1px solid rgba(5, 217, 198, 0.3)",
-            transition: "0.3s",
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
+            border: "1px solid rgba(5, 217, 198, 0.2)",
+            transition: "0.3s ease",
+            minWidth: "180px"
           }}
+          onClick={() => navigate("/profile")}
           onMouseOver={(e) =>
-            (e.currentTarget.style.backgroundColor = "rgba(5, 217, 198, 0.2)")
+            (e.currentTarget.style.backgroundColor = "rgba(5, 217, 198, 0.1)")
           }
           onMouseOut={(e) =>
-            (e.currentTarget.style.backgroundColor = "rgba(5, 217, 198, 0.1)")
+            (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)")
           }
         >
           <div
-            className="rounded-circle overflow-hidden shadow-sm"
+            className="rounded-circle overflow-hidden shadow"
             style={{
-              width: "35px",
-              height: "35px",
+              width: "45px",
+              height: "45px",
               border: "2px solid #05d9c6",
+              flexShrink: 0
             }}
           >
             <img
@@ -115,24 +120,28 @@ const Header = () => {
             />
           </div>
 
-          <div className="d-flex flex-column align-items-start">
+          <div className="d-flex flex-column align-items-start justify-content-center overflow-hidden">
             <span
-              className="text-white small fw-bold text-uppercase d-none d-md-block"
-              style={{ letterSpacing: "1px" }}
+              className="text-white fw-bold text-uppercase text-truncate w-100"
+              style={{ letterSpacing: "1px", fontSize: "0.85rem" }}
             >
               {userName}
             </span>
             <button
               onClick={handleLogout}
-              className="text-danger border-0 bg-transparent p-0 m-0"
-              style={{ fontSize: "10px" }}
+              className="btn btn-link text-danger p-0 m-0 text-decoration-none fw-bold"
+              style={{ fontSize: "0.75rem", transition: "0.2s" }}
+              onMouseOver={(e) => (e.currentTarget.style.color = "#ff4d4d")}
+              onMouseOut={(e) => (e.currentTarget.style.color = "#dc3545")}
             >
+              <i className="bi bi-box-arrow-right me-1"></i>
               Logout
             </button>
           </div>
         </div>
       </div>
     </header>
+    </>
   );
 };
 
