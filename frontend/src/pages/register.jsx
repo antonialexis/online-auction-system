@@ -14,10 +14,7 @@ const Signup = () => {
     gender: "",
     password: "",
     confirm_password: "",
-<<<<<<< HEAD
-=======
     role: "", 
->>>>>>> 87ee87f (Made the database, Supabase.)
   });
 
   const [hobbiesList, setHobbiesList] = useState([]);
@@ -46,14 +43,10 @@ const Signup = () => {
     e.preventDefault();
     setError("");
 
-<<<<<<< HEAD
-    // 1. Validation Logic
-=======
     if (!formData.role) {
       setError("Please select a role (Buyer or Seller).");
       return;
     }
->>>>>>> 87ee87f (Made the database, Supabase.)
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
@@ -136,8 +129,8 @@ const Signup = () => {
             <form onSubmit={handleSignup}>
               {/* Name Row */}
               <div className="row">
-                <div className="col-md-12 mb-3 text-start">
-                  <label className="text-white-50 small mb-1">Name</label>
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">First Name</label>
                   <input
                     type="text"
                     name="first_name"
@@ -146,6 +139,59 @@ const Signup = () => {
                     onChange={handleChange}
                     required
                   />
+                </div>
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    className="form-control bg-dark border-secondary text-white py-2"
+                    placeholder="Doe"
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ROLE SELECTION */}
+              <div className="row mb-3">
+                <div className="col-12 text-start">
+                  <label className="text-white-50 small mb-2 d-block">
+                    I am a...
+                  </label>
+                  <div className="btn-group w-100" role="group">
+                    <input
+                      type="radio"
+                      className="btn-check"
+                      name="role"
+                      id="buyer"
+                      value="buyer"
+                      onChange={handleChange}
+                      checked={formData.role === "buyer"}
+                    />
+                    <label
+                      className="btn btn-outline-info fw-bold"
+                      htmlFor="buyer"
+                    >
+                      Buyer
+                    </label>
+
+                    <input
+                      type="radio"
+                      className="btn-check"
+                      name="role"
+                      id="seller"
+                      value="seller"
+                      onChange={handleChange}
+                      checked={formData.role === "seller"}
+                    />
+                    <label
+                      className="btn btn-outline-info fw-bold"
+                      htmlFor="seller"
+                    >
+                      Seller
+                    </label>
+                  </div>
                 </div>
               </div>
 

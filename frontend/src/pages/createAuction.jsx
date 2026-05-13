@@ -49,7 +49,8 @@ const CreateAuction = () => {
           starting_bid: parseFloat(formData.startingBid),
           current_bid: parseFloat(formData.startingBid),
           end_time: endTime.toISOString(),
-          status: 'active'
+          status: 'active',
+          image_url: formData.image_url
         }
       ]);
 
@@ -108,6 +109,12 @@ const CreateAuction = () => {
                 <div className="col-12">
                   <label className="text-white-50 small mb-2">Item Description</label>
                   <textarea name="description" rows="4" className="form-control bg-dark border-secondary text-white" placeholder="Tell bidders why this item is special..." onChange={handleChange} required></textarea>
+                </div>
+
+                <div className="col-12">
+                  <label className="text-white-50 small mb-2">Image URL</label>
+                  <input type="url" name="image_url" className="form-control bg-dark border-secondary text-white py-3" placeholder="https://example.com/image.jpg" onChange={handleChange} />
+                  <small className="text-white-50 mt-1 d-block">Provide a direct link to the image.</small>
                 </div>
 
                 <div className="col-12 mt-5">

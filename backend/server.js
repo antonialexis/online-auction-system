@@ -47,17 +47,6 @@ app.post("/api/register", async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-<<<<<<< HEAD
-    const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    await db.query(sql, [
-      first_name,
-      last_name,
-      email,
-      contact_number,
-      hobbies,
-      gender,
-      hashedPassword,
-=======
     const { error } = await db.from("users").insert([
       {
         first_name,
@@ -67,9 +56,7 @@ app.post("/api/register", async (req, res) => {
         hobbies,
         gender,
         password: hashedPassword,
-        role,
       },
->>>>>>> 87ee87f (Made the database, Supabase.)
     ]);
 
     if (error) throw error;

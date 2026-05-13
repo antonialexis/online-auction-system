@@ -13,20 +13,6 @@ const MarketPage = () => {
     React.useEffect(() => {
         const fetchAuctions = async () => {
             try {
-<<<<<<< HEAD
-                const response = await fetch("http://localhost:5000/api/auctions");
-                const data = await response.json();
-                
-                // Map database fields to match what your ItemCard expects
-                const formattedData = data.map(item => ({
-                    id: item.id,
-                    title: item.title,
-                    seller: item.seller_name || 'Collector',
-                    sellerShort: (item.seller_name || 'C').substring(0, 2).toUpperCase(),
-                    currentBid: parseFloat(item.current_bid) || 0, // Ensure it's a number
-                    image: item.image_url || 'https://placehold.co/600x600/png?text=No+Image',
-                    description: item.description
-=======
                 const { data, error } = await supabase
                     .from("auctions")
                     .select(`
@@ -40,11 +26,11 @@ const MarketPage = () => {
 
                 if (error) throw error;
 
-                const normalized = data.map((auction) => ({
+                const formattedData = data.map((auction) => ({
                   ...auction,
                   id: auction.id,
-                  seller_name: auction.users ? auction.users.first_name : "Unknown"
->>>>>>> 87ee87f (Made the database, Supabase.)
+                  seller_name: auction.users ? auction.users.first_name : "Unknown",
+                  image_url: auction.image_url || 'https://placehold.co/600x600/png?text=No+Image',
                 }));
 
                 setAllItems(formattedData);
