@@ -6,6 +6,7 @@ import ItemModal from "../components/itemModal";
 import { supabase } from "../supabaseClient";
 
 const HomePage = () => {
+  const [collectorItems, setCollectorItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [limitedItems, setLimitedItems] = useState([]);
   const [loading, setLoading] = useState(true);

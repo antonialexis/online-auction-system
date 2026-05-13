@@ -30,8 +30,17 @@ const Signup = () => {
     e.preventDefault();
     setError("");
 
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (!specialCharRegex.test(formData.password)) {
+      setError("Password must contain at least one special character.");
+      return;
+    }
     if (formData.password !== formData.confirm_password) {
-      setError("Passwords do not match!");
+      setError("Passwords do not match.");
       return;
     }
 
@@ -155,11 +164,19 @@ const Signup = () => {
               <button type="submit" className="btn w-100 fw-bold py-3 mb-4 rounded-3 text-dark" style={{ background: "linear-gradient(45deg, #05d9c6, #00bfaf)", border: "none" }} disabled={loading}>
                 {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : "Register Account Now"}
               </button>
-            </form>
 
-            <div className="text-center text-white-50 small">
-              Already have an account? <Link to="/" className="text-decoration-none fw-bold" style={{ color: "#05d9c6" }}>Log In</Link>
-            </div>
+              {/* Existing User Link */}
+              <div className="text-end mt-2">
+                <span className="text-white-50 small">Existing User? </span>
+                <Link
+                  to="/"
+                  className="text-decoration-none fw-bold"
+                  style={{ color: "#05d9c6" }}
+                >
+                  Login
+                </Link>
+              </div>
+            </form>
           </div>
         </div>
       </div>

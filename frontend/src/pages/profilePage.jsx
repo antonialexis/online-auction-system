@@ -119,11 +119,8 @@ const ProfilePage = () => {
   return (
     <div className="dark-theme min-vh-100 pb-5 text-white">
       <Header />
-      
       <div className="container py-5 mt-4">
         <div className="row g-4">
-          
-          {/* LEFT COLUMN: Profile Card */}
           <div className="col-lg-4">
             <div className="p-4 rounded-4 shadow-lg text-center" style={{ backgroundColor: "#161a2d", border: "1px solid rgba(255,255,255,0.1)" }}>
               <div className="mx-auto mb-3 rounded-circle bg-dark d-flex align-items-center justify-content-center shadow" 
@@ -160,9 +157,11 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Information Details */}
           <div className="col-lg-8">
-            <div className="p-4 p-md-5 rounded-4 shadow-lg h-100" style={{ backgroundColor: "#161a2d", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div
+              className="p-4 p-md-5 rounded-4 shadow-lg h-100"
+              style={{ backgroundColor: "#161a2d" }}
+            >
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h4 className="fw-bold mb-0">{isEditing ? "Update Profile" : "Account Information"}</h4>
                 <button 
@@ -242,7 +241,6 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -42,6 +42,9 @@ const Login = () => {
       } else {
         navigate('/home');
       }
+
+      localStorage.setItem("userName", profile?.first_name || data.user.email);
+      navigate("/home");
     } catch (err) {
       setError(err.message || "Invalid login credentials");
     }
