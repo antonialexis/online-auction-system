@@ -20,7 +20,7 @@ const ItemCard = ({ item }) => {
           
           <div className="d-flex justify-content-between align-items-end mb-3">
               <p className="card-text text-white opacity-75 small mb-0">Current Bid:</p>
-              <p className="card-text text-white fw-bold fs-5 mb-0">${item.currentBid.toLocaleString()}</p>
+              <p className="card-text text-white fw-bold fs-5 mb-0">${(item.currentBid || 0).toLocaleString()}</p>
           </div>
           
           <button className="btn btn-primary w-100 fw-bold rounded-3 py-2" style={{ backgroundColor: '#4f46e5', borderColor: 'transparent' }}>

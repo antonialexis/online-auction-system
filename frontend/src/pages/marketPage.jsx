@@ -10,23 +10,30 @@ const MarketPage = () => {
     const [selectedItem, setSelectedItem] = useState(null); 
     const [allItems, setAllItems] = useState([]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchAuctions = async () => {
             try {
                 const response = await fetch("http://localhost:5000/api/auctions");
                 const data = await response.json();
-                const normalized = data.map((auction) => ({
-                  ...auction,
-                  id: auction.id ?? auction.auction_id,
+                
+                // Map database fields to match what your ItemCard expects
+                const formattedData = data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    seller: item.seller_name || 'Collector',
+                    sellerShort: (item.seller_name || 'C').substring(0, 2).toUpperCase(),
+                    currentBid: parseFloat(item.current_bid) || 0, // Ensure it's a number
+                    image: item.image_url || 'https://placehold.co/600x600/png?text=No+Image',
+                    description: item.description
                 }));
-                setAllItems(normalized);
+
+                setAllItems(formattedData);
             } catch (err) {
-                console.error("Error loading auctions:", err);
+                console.error("Failed to load auctions:", err);
             }
         };
         fetchAuctions();
     }, []);
-
   return (
     <div className="dark-theme min-vh-100">
       <Header />

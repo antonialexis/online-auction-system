@@ -36,11 +36,9 @@ app.post("/api/register", async (req, res) => {
     hobbies,
     gender,
     password,
-    role,
   } = req.body;
-  if (!role) return res.status(400).json({ error: "Role is required." });
 
-  const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+  const specialCharRegex = /[!@#$%^&*(),.?":{}|<>-]/;
   if (!specialCharRegex.test(password)) {
     return res
       .status(400)
@@ -49,7 +47,7 @@ app.post("/api/register", async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     await db.query(sql, [
       first_name,
       last_name,
@@ -58,7 +56,6 @@ app.post("/api/register", async (req, res) => {
       hobbies,
       gender,
       hashedPassword,
-      role,
     ]);
     res.status(201).json({ message: "Registered successfully!" });
   } catch (err) {

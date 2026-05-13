@@ -29,7 +29,6 @@ async function setupDatabase() {
       hobbies TEXT,
       gender VARCHAR(20),
       password VARCHAR(255),
-      role VARCHAR(50),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 

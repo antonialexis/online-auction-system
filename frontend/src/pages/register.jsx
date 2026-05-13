@@ -13,7 +13,6 @@ const Signup = () => {
     gender: "",
     password: "",
     confirm_password: "",
-    role: "", // Captures "buyer" or "seller"
   });
 
   const [hobbiesList, setHobbiesList] = useState([]);
@@ -45,10 +44,6 @@ const Signup = () => {
     setError("");
 
     // 1. Validation Logic
-    if (!formData.role) {
-      setError("Please select a role (Buyer or Seller).");
-      return;
-    }
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
@@ -137,48 +132,6 @@ const Signup = () => {
                     onChange={handleChange}
                     required
                   />
-                </div>
-              </div>
-
-              {/* ROLE SELECTION */}
-              <div className="row mb-3">
-                <div className="col-12 text-start">
-                  <label className="text-white-50 small mb-2 d-block">
-                    I am a...
-                  </label>
-                  <div className="btn-group w-100" role="group">
-                    <input
-                      type="radio"
-                      className="btn-check"
-                      name="role"
-                      id="buyer"
-                      value="buyer"
-                      onChange={handleChange}
-                      checked={formData.role === "buyer"}
-                    />
-                    <label
-                      className="btn btn-outline-info fw-bold"
-                      htmlFor="buyer"
-                    >
-                      Buyer
-                    </label>
-
-                    <input
-                      type="radio"
-                      className="btn-check"
-                      name="role"
-                      id="seller"
-                      value="seller"
-                      onChange={handleChange}
-                      checked={formData.role === "seller"}
-                    />
-                    <label
-                      className="btn btn-outline-info fw-bold"
-                      htmlFor="seller"
-                    >
-                      Seller
-                    </label>
-                  </div>
                 </div>
               </div>
 

@@ -55,3 +55,23 @@ CREATE TABLE IF NOT EXISTS bids (
     FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
     FOREIGN KEY (bidder_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT,
+    seller_id INT,
+    title VARCHAR(100) NOT NULL,
+    description TEXT,
+    starting_price DECIMAL(10, 2) NOT NULL,
+    current_bid DECIMAL(10, 2) DEFAULT 0.00,
+    end_time DATETIME NOT NULL,
+    item_condition VARCHAR(50),
+    image_url VARCHAR(255),
+    status ENUM('active', 'ended') DEFAULT 'active',
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
+);

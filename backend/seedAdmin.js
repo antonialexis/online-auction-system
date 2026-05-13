@@ -13,8 +13,8 @@ const seedAdmin = async () => {
     ]);
 
     if (existing.length === 0) {
-      const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password, role) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
       await db.query(sql, [
         "Admin",
@@ -24,7 +24,6 @@ const seedAdmin = async () => {
         "Admin",
         "N/A",
         hashedPassword,
-        "Admin",
       ]);
       console.log("Admin account created successfully!");
     } else {
