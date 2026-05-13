@@ -105,6 +105,7 @@ const CreateAuction = () => {
       const { error } = await supabase.from('auctions').insert([
         {
           seller_id: user.id,
+          title: formData.itemName,
           item_name: formData.itemName,
           description: formData.description,
           starting_price: parseFloat(formData.startingBid),

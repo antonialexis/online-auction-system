@@ -1,9 +1,11 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const AdminHeader = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
     const handleLogout = async (e) => {
         e.stopPropagation();
@@ -14,8 +16,6 @@ const AdminHeader = () => {
     };
 
     const adminName = localStorage.getItem('userName') || 'Admin';
-    const location = useLocation();
-    const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
     const navLinkStyle = (tab) => ({
         cursor: 'pointer',
@@ -64,31 +64,31 @@ const AdminHeader = () => {
 
                 {/* ADMIN NAVIGATION */}
                 <nav className="d-none d-md-flex gap-4">
-                    <a
-                        href="/admin"
+                    <Link
+                        to="/admin"
                         style={navLinkStyle('dashboard')}
                     >
                         Dashboard
-                    </a>
-                    <a
-                        href="/admin?tab=listings"
+                    </Link>
+                    <Link
+                        to="/admin?tab=listings"
                         style={navLinkStyle('listings')}
                     >
                         Listings
-                    </a>
-                    <a
-                        href="/admin?tab=users"
+                    </Link>
+                    <Link
+                        to="/admin?tab=users"
                         style={navLinkStyle('users')}
                     >
                         Users
-                    </a>
-                    <a
-                        href="/home"
+                    </Link>
+                    <Link
+                        to="/home"
                         className="text-white-50 text-decoration-none fw-bold small text-uppercase"
                         style={{ letterSpacing: '0.5px' }}
                     >
                         ← User View
-                    </a>
+                    </Link>
                 </nav>
 
                 {/* ADMIN PROFILE */}

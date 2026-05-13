@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminHeader from '../components/AdminHeader';
+import ItemModal from '../components/itemModal';
 import { supabase } from '../supabaseClient';
 
 const AdminPage = () => {
@@ -14,6 +15,7 @@ const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('listings');
     const [listingFilter, setListingFilter] = useState('pending'); // 'pending' | 'active' | 'rejected'
     const [feedbackModal, setFeedbackModal] = useState(null); // { auctionId, text }
+    const [selectedItem, setSelectedItem] = useState(null);
 
     // Sync tab from URL query param
     useEffect(() => {
@@ -73,6 +75,15 @@ const AdminPage = () => {
             .eq('id', id);
         if (error) return alert('Error: ' + error.message);
         setFeedbackModal(null);
+        fetchData();
+    };
+
+    const handleToggleLimited = async (id, currentLimited) => {
+        const { error } = await supabase
+            .from('auctions')
+            .update({ is_limited: !currentLimited })
+            .eq('id', id);
+        if (error) return alert('Error toggling limited: ' + error.message);
         fetchData();
     };
 
@@ -311,6 +322,25 @@ const AdminPage = () => {
                                                 </td>
                                                 <td className="px-4 py-3 text-end">
                                                     <div className="d-flex gap-2 justify-content-end flex-wrap">
+                                                        <button
+                                                            onClick={() => handleToggleLimited(auction.id, auction.is_limited)}
+                                                            className={`btn btn-sm me-2 rounded-circle`}
+                                                            style={{ 
+                                                                width: '32px', height: '32px', padding: 0,
+                                                                color: auction.is_limited ? '#fbbf24' : 'rgba(255,255,255,0.2)',
+                                                                backgroundColor: auction.is_limited ? 'rgba(251,191,36,0.1)' : 'transparent',
+                                                                border: auction.is_limited ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)'
+                                                            }}
+                                                            title={auction.is_limited ? 'Remove from Limited' : 'Mark as Limited'}
+                                                        >
+                                                            <i className={`bi bi-star${auction.is_limited ? '-fill' : ''}`}></i>
+                                                        </button>
+                                                    <button
+                                                        onClick={() => setSelectedItem(auction)}
+                                                        className="btn btn-sm btn-outline-info me-2 rounded-3 px-3 fw-bold"
+                                                    >
+                                                        View
+                                                    </button>
                                                         {listingFilter === 'pending' && (
                                                             <>
                                                                 <button
@@ -449,6 +479,13 @@ const AdminPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+            {selectedItem && (
+                <ItemModal 
+                    item={selectedItem} 
+                    onClose={() => setSelectedItem(null)} 
+                    onBidSuccess={fetchData}
+                />
             )}
         </div>
     );

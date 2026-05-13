@@ -12,10 +12,12 @@ import ProfilePage from "./pages/profilePage";
 import HistoryPage from "./pages/history";
 import AdminPage from "./pages/adminPage";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import BanListener from "./components/BanListener";
 
 function App() {
   return (
     <Router>
+      <BanListener />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
