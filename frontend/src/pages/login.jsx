@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const Login = () => {
   const navigate = useNavigate();
 
-  // State for inputs and error handling
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  // State for toggling password visibility
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
@@ -17,21 +15,35 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
-        navigate("/home");
+      // Fetch user profile from the public users table
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("first_name, role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError) {
+        console.warn("Could not fetch user profile:", profileError.message);
+      }
+
+      localStorage.setItem("userName", profile?.first_name || data.user.email);
+      localStorage.setItem("userRole", profile?.role || "user");
+
+      // Redirect admins to admin dashboard, regular users to home
+      if (profile?.role === 'admin') {
+        navigate('/admin');
       } else {
-        setError(data.error || "Invalid login credentials");
+        navigate('/home');
       }
     } catch (err) {
-      setError("Cannot connect to server. Please check your backend.");
+      setError(err.message || "Invalid login credentials");
     }
   };
 
