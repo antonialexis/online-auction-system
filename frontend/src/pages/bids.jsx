@@ -92,7 +92,6 @@ const Bids = () => {
                   {user?.email?.substring(0, 2).toUpperCase() || "JD"}
                 </div>
                 <h5 className="text-white fw-bold mb-0">{localStorage.getItem("userName") || "User"}</h5>
-                <p className="text-white-50 small">Verified Collector</p>
               </div>
 
               <div className="d-grid gap-2">

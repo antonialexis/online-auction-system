@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
     contact_number VARCHAR(20),
     hobbies VARCHAR(100),
     gender VARCHAR(20),
-    role VARCHAR(50) DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -21,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, first_name, last_name, contact_number, hobbies, gender, role)
+  INSERT INTO public.users (id, email, first_name, last_name, contact_number, hobbies, gender)
   VALUES (
     new.id, 
     new.email, 
@@ -29,8 +28,7 @@ BEGIN
     new.raw_user_meta_data->>'last_name',
     new.raw_user_meta_data->>'contact_number',
     new.raw_user_meta_data->>'hobbies',
-    new.raw_user_meta_data->>'gender',
-    new.raw_user_meta_data->>'role'
+    new.raw_user_meta_data->>'gender'
   );
   RETURN new;
 END;
