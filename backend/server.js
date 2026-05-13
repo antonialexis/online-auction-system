@@ -179,29 +179,81 @@ app.post("/api/bids/place", verifyToken, async (req, res) => {
   const { auction_id, bid_amount } = req.body;
   const bidder_id = req.user.id;
 
+  // Ensure bid_amount is a valid number
+  const numericBid = parseFloat(bid_amount);
+  if (isNaN(numericBid)) {
+    return res.status(400).json({ error: "Invalid bid amount." });
+  }
+
   try {
-    // 1. Check current bid and end time
-    const [rows] = await db.query("SELECT current_bid, end_time, status FROM auctions WHERE id = ?", [auction_id]);
+    // 1. Fetch auction details including seller_id
+    const [rows] = await db.query(
+      "SELECT current_bid, end_time, status, seller_id FROM auctions WHERE id = ?", 
+      [auction_id]
+    );
     
     if (rows.length === 0) return res.status(404).json({ error: "Auction not found." });
     
     const auction = rows[0];
+
+    // Check if bidder is the seller
+    if (auction.seller_id === bidder_id) {
+      return res.status(400).json({ error: "You cannot bid on your own auction." });
+    }
+
+    // Check if auction is still active
     if (auction.status === 'closed' || new Date(auction.end_time) < new Date()) {
         return res.status(400).json({ error: "Auction has already ended." });
     }
 
-    if (bid_amount <= auction.current_bid) {
-      return res.status(400).json({ error: "Bid must be higher than current bid." });
+    // Check if bid is high enough
+    if (numericBid <= auction.current_bid) {
+      return res.status(400).json({ error: "Bid must be higher than the current bid." });
     }
 
-    // 2. Insert into bids table and update auction's current_bid
-    await db.query("INSERT INTO bids (auction_id, bidder_id, bid_amount) VALUES (?, ?, ?)", 
-                  [auction_id, bidder_id, bid_amount]);
-    await db.query("UPDATE auctions SET current_bid = ? WHERE id = ?", [bid_amount, auction_id]);
+    // 2. START TRANSACTION
+    // This ensures both the history log and the price update succeed together
+    await db.query("START TRANSACTION");
 
-    res.status(200).json({ message: "Bid placed successfully!" });
+    try {
+      // Record the bid in history
+      await db.query(
+        "INSERT INTO bids (auction_id, bidder_id, bid_amount) VALUES (?, ?, ?)", 
+        [auction_id, bidder_id, numericBid]
+      );
+
+      // Update the main auction price
+      await db.query(
+        "UPDATE auctions SET current_bid = ? WHERE id = ?", 
+        [numericBid, auction_id]
+      );
+
+      await db.query("COMMIT");
+      res.status(200).json({ message: "Bid placed successfully!" });
+
+    } catch (transactionError) {
+      await db.query("ROLLBACK");
+      throw transactionError; // Pass to the outer catch block
+    }
+
   } catch (err) {
-    res.status(500).json({ error: "Bidding failed." });
+    console.error("Bidding Error:", err);
+    res.status(500).json({ error: "Bidding failed due to a server error." });
+  }
+});
+// Get all active auctions
+app.get("/api/auctions", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT auctions.*, users.first_name as seller_name 
+       FROM auctions 
+       JOIN users ON auctions.seller_id = users.id 
+       WHERE status = 'active' 
+       ORDER BY created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch auctions" });
   }
 });
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useEffect, useState } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/header';
 import ItemCard from '../components/itemcards'; 
@@ -8,23 +8,24 @@ import ItemModal from '../components/itemModal';
 const MarketPage = () => {
     const navigate = useNavigate();
     const [selectedItem, setSelectedItem] = useState(null); 
+    const [allItems, setAllItems] = useState([]);
 
-    const allItems = [
-        { 
-          id: 1, 
-          title: 'Naruto Figurine', 
-          seller: 'AAnime_Vault', 
-          currentBid: 3200, 
-          image: 'https://placehold.co/600x600/png?text=Naruto' 
-        },
-        { 
-          id: 2, 
-          title: 'Charizard Card', 
-          seller: 'Pika_Pros', 
-          currentBid: 125000, 
-          image: 'https://placehold.co/600x600/png?text=Charizard' 
-        },
-    ];
+    useEffect(() => {
+        const fetchAuctions = async () => {
+            try {
+                const response = await fetch("http://localhost:5000/api/auctions");
+                const data = await response.json();
+                const normalized = data.map((auction) => ({
+                  ...auction,
+                  id: auction.id ?? auction.auction_id,
+                }));
+                setAllItems(normalized);
+            } catch (err) {
+                console.error("Error loading auctions:", err);
+            }
+        };
+        fetchAuctions();
+    }, []);
 
   return (
     <div className="dark-theme min-vh-100">
