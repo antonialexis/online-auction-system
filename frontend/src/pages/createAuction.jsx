@@ -139,7 +139,7 @@ const CreateAuction = () => {
               <p className="text-white-50 small mb-4">Fill in the details below to create your auction listing.</p>
 
               <form className="row g-4 text-start" onSubmit={handleSubmit}>
-                
+
                 {/* Item Name */}
                 <div className="col-12">
                   <label className="text-white-50 small mb-2">Item Name</label>

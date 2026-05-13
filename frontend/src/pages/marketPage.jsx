@@ -112,7 +112,7 @@ const MarketPage = () => {
                 <div className="d-flex gap-2 mb-2">
                   <input 
                     type="number" 
-                    placeholder="Min" 
+                    placeholder="Minimum" 
                     className="form-control form-control-sm bg-dark text-white border-secondary rounded-3 py-2" 
                     value={filters.minPrice}
                     onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
