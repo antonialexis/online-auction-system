@@ -73,7 +73,7 @@ const Signup = () => {
 
       if (error) throw error;
 
-      alert("Registration successful! Please check your email for verification.");
+      alert("Registration successful! Welcome to Collectors.net.");
       navigate("/");
     } catch (err) {
       setError(err.message || "Registration failed.");
