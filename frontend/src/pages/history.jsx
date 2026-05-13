@@ -1,34 +1,68 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/header";
+import { supabase } from "../supabaseClient";
 
 const HistoryPage = () => {
-  // Dummy data representing past auction activity
-  const historyData = [
-    {
-      id: 1,
-      item: "Limited Edition Naruto Figurine",
-      date: "2026-03-15",
-      finalBid: 3200,
-      status: "Won",
-      seller: "AAnime_Vault",
-    },
-    {
-      id: 2,
-      item: "First Edition Charizard PSA 10",
-      date: "2026-03-10",
-      finalBid: 125000,
-      status: "Outbid",
-      seller: "Pika_Pros",
-    },
-    {
-      id: 3,
-      item: "Vintage Gameboy Color - Teal",
-      date: "2026-02-28",
-      finalBid: 450,
-      status: "Won",
-      seller: "Retro_Resale",
-    },
-  ];
+  const [historyData, setHistoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Fetch closed auctions where user participated
+        const { data: bids, error } = await supabase
+          .from('bids')
+          .select(`
+            bid_amount,
+            bid_time,
+            auctions (
+              id,
+              title,
+              current_bid,
+              status,
+              end_time,
+              users (
+                first_name
+              )
+            )
+          `)
+          .eq('bidder_id', user.id)
+          .eq('auctions.status', 'closed')
+          .order('bid_time', { ascending: false });
+
+        if (error) throw error;
+
+        // Filter to latest bid per auction and format
+        const uniqueHistory = [];
+        const seenAuctions = new Set();
+        if (bids) {
+          for (const b of bids) {
+            if (b.auctions && !seenAuctions.has(b.auctions.id)) {
+              uniqueHistory.push({
+                id: b.auctions.id,
+                item: b.auctions.title,
+                date: new Date(b.auctions.end_time).toLocaleDateString(),
+                finalBid: b.auctions.current_bid,
+                status: b.bid_amount >= b.auctions.current_bid ? "Won" : "Outbid",
+                seller: b.auctions.users ? b.auctions.users.first_name : "Unknown"
+              });
+              seenAuctions.add(b.auctions.id);
+            }
+          }
+        }
+        setHistoryData(uniqueHistory);
+      } catch (err) {
+        console.error("Error fetching history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
 
   return (
     <div className="dark-theme min-vh-100 pb-5 text-white">
@@ -42,9 +76,6 @@ const HistoryPage = () => {
               Review your past bids and auction outcomes.
             </p>
           </div>
-          <button className="btn btn-outline-info btn-sm rounded-pill px-4">
-            Download Report
-          </button>
         </div>
 
         <div
@@ -73,44 +104,46 @@ const HistoryPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {historyData.map((record) => (
-                  <tr
-                    key={record.id}
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
-                  >
-                    <td className="ps-4 py-4">
-                      <span className="fw-bold text-white">{record.item}</span>
-                    </td>
-                    <td className="text-white-50">{record.date}</td>
-                    <td className="text-info">{record.seller}</td>
-                    <td className="fw-bold">
-                      ${record.finalBid.toLocaleString()}
-                    </td>
-                    <td className="text-center">
-                      <span
-                        className={`badge px-3 py-2 rounded-pill ${
-                          record.status === "Won"
-                            ? "bg-success-subtle text-success"
-                            : "bg-danger-subtle text-danger"
-                        }`}
-                      >
-                        {record.status}
-                      </span>
+                {loading ? (
+                  <tr><td colSpan="5" className="text-center py-5">Loading history...</td></tr>
+                ) : historyData.length > 0 ? (
+                  historyData.map((record) => (
+                    <tr
+                      key={record.id}
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+                    >
+                      <td className="ps-4 py-4">
+                        <span className="fw-bold text-white">{record.item}</span>
+                      </td>
+                      <td className="text-white-50">{record.date}</td>
+                      <td className="text-info">{record.seller}</td>
+                      <td className="fw-bold">
+                        ${record.finalBid?.toLocaleString()}
+                      </td>
+                      <td className="text-center">
+                        <span
+                          className={`badge px-3 py-2 rounded-pill ${
+                            record.status === "Won"
+                              ? "bg-success-subtle text-success"
+                              : "bg-danger-subtle text-danger"
+                          }`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-5 text-white-50">
+                      No past activity found.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
-
-        {/* Empty State Suggestion (Commented out for now) */}
-        {/* historyData.length === 0 && (
-          <div className="text-center py-5">
-            <i className="bi bi-clock-history display-1 text-white-25"></i>
-            <p className="mt-3 text-white-50">No history found. Start bidding to see records here!</p>
-          </div>
-        )*/}
       </div>
     </div>
   );

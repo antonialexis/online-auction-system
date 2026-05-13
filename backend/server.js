@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const db = require("./db");
+const db = require("./db"); // This is now the Supabase client
 require("dotenv").config();
 
 const app = express();
@@ -47,6 +47,7 @@ app.post("/api/register", async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+<<<<<<< HEAD
     const sql = `INSERT INTO users (first_name, last_name, email, contact_number, hobbies, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     await db.query(sql, [
       first_name,
@@ -56,9 +57,26 @@ app.post("/api/register", async (req, res) => {
       hobbies,
       gender,
       hashedPassword,
+=======
+    const { error } = await db.from("users").insert([
+      {
+        first_name,
+        last_name,
+        email,
+        contact_number,
+        hobbies,
+        gender,
+        password: hashedPassword,
+        role,
+      },
+>>>>>>> 87ee87f (Made the database, Supabase.)
     ]);
+
+    if (error) throw error;
+
     res.status(201).json({ message: "Registered successfully!" });
   } catch (err) {
+    console.error("Registration Error:", err);
     res.status(500).json({ error: "Registration failed." });
   }
 });
@@ -66,13 +84,16 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-    if (rows.length === 0)
+    const { data: users, error } = await db
+      .from("users")
+      .select("*")
+      .eq("email", email);
+
+    if (error) throw error;
+    if (!users || users.length === 0)
       return res.status(401).json({ error: "Invalid credentials" });
 
-    const user = rows[0];
+    const user = users[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
@@ -86,6 +107,7 @@ app.post("/api/login", async (req, res) => {
       res.status(401).json({ error: "Invalid credentials" });
     }
   } catch (err) {
+    console.error("Login Error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -93,14 +115,18 @@ app.post("/api/login", async (req, res) => {
 // --- PROTECTED ROUTES ---
 app.get("/api/profile", verifyToken, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT first_name, last_name, email, contact_number, hobbies, gender FROM users WHERE id = ?",
-      [req.user.id],
-    );
-    if (rows.length === 0)
-      return res.status(404).json({ error: "User not found" });
-    res.status(200).json(rows[0]);
+    const { data, error } = await db
+      .from("users")
+      .select("first_name, last_name, email, contact_number, hobbies, gender")
+      .eq("id", req.user.id)
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: "User not found" });
+
+    res.status(200).json(data);
   } catch (err) {
+    console.error("Profile Fetch Error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -108,14 +134,18 @@ app.get("/api/profile", verifyToken, async (req, res) => {
 app.put("/api/profile/update", verifyToken, async (req, res) => {
   const { email, contact_number, hobbies } = req.body;
   const userId = req.user.id;
-  const sql = `UPDATE users SET email = ?, contact_number = ?, hobbies = ? WHERE id = ?`;
 
   try {
-    const [result] = await db.query(sql, [email, contact_number, hobbies, userId]);
-    
-    if (result.affectedRows === 0)
+    const { data, error, count } = await db
+      .from("users")
+      .update({ email, contact_number, hobbies })
+      .eq("id", userId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0)
       return res.status(404).json({ error: "User not found" });
-      
+
     res.json({ message: "Profile updated successfully" });
   } catch (err) {
     console.error("Update Error:", err);
@@ -133,23 +163,28 @@ app.post("/api/profile/change-password", verifyToken, async (req, res) => {
 
   try {
     // 1. Fetch current password
-    const [rows] = await db.query("SELECT password FROM users WHERE id = ?", [
-      userId,
-    ]);
-    if (rows.length === 0)
+    const { data: user, error: fetchError } = await db
+      .from("users")
+      .select("password")
+      .eq("id", userId)
+      .single();
+
+    if (fetchError || !user)
       return res.status(404).json({ message: "User not found" });
 
     // 2. Verify old password
-    const valid = await bcrypt.compare(old_password, rows[0].password);
+    const valid = await bcrypt.compare(old_password, user.password);
     if (!valid)
       return res.status(401).json({ message: "Incorrect current password" });
 
     // 3. Hash and update
     const newHash = await bcrypt.hash(new_password, 10);
-    await db.query("UPDATE users SET password = ? WHERE id = ?", [
-      newHash,
-      userId,
-    ]);
+    const { error: updateError } = await db
+      .from("users")
+      .update({ password: newHash })
+      .eq("id", userId);
+
+    if (updateError) throw updateError;
 
     res.status(200).json({ message: "Password updated successfully" });
   } catch (err) {
@@ -157,100 +192,89 @@ app.post("/api/profile/change-password", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error occurred" });
   }
 });
+
 // --- AUCTION ROUTES ---
 app.post("/api/auctions/create", verifyToken, async (req, res) => {
   const { title, description, starting_bid, end_time } = req.body;
-  const seller_id = req.user.id; // From verifyToken decoded JWT
+  const seller_id = req.user.id;
 
   try {
-    const sql = `INSERT INTO auctions (seller_id, title, description, starting_bid, current_bid, end_time) 
-                 VALUES (?, ?, ?, ?, ?, ?)`;
-    await db.query(sql, [seller_id, title, description, starting_bid, starting_bid, end_time]);
+    const { error } = await db.from("auctions").insert([
+      {
+        seller_id,
+        title,
+        description,
+        starting_bid,
+        current_bid: starting_bid,
+        end_time,
+      },
+    ]);
+
+    if (error) throw error;
+
     res.status(201).json({ message: "Auction created successfully!" });
   } catch (err) {
-    console.error(err);
+    console.error("Auction Creation Error:", err);
     res.status(500).json({ error: "Failed to create auction." });
   }
 });
+
 app.post("/api/bids/place", verifyToken, async (req, res) => {
   const { auction_id, bid_amount } = req.body;
   const bidder_id = req.user.id;
 
-  // Ensure bid_amount is a valid number
   const numericBid = parseFloat(bid_amount);
   if (isNaN(numericBid)) {
     return res.status(400).json({ error: "Invalid bid amount." });
   }
 
   try {
-    // 1. Fetch auction details including seller_id
-    const [rows] = await db.query(
-      "SELECT current_bid, end_time, status, seller_id FROM auctions WHERE id = ?", 
-      [auction_id]
-    );
-    
-    if (rows.length === 0) return res.status(404).json({ error: "Auction not found." });
-    
-    const auction = rows[0];
+    // Using the RPC function defined in schema.sql for atomic transaction
+    const { error } = await db.rpc("place_bid", {
+      p_auction_id: auction_id,
+      p_bidder_id: bidder_id,
+      p_bid_amount: numericBid,
+    });
 
-    // Check if bidder is the seller
-    if (auction.seller_id === bidder_id) {
-      return res.status(400).json({ error: "You cannot bid on your own auction." });
+    if (error) {
+      // Supabase RPC errors often contain a 'message' that we can show
+      return res.status(400).json({ error: error.message || "Bidding failed." });
     }
 
-    // Check if auction is still active
-    if (auction.status === 'closed' || new Date(auction.end_time) < new Date()) {
-        return res.status(400).json({ error: "Auction has already ended." });
-    }
-
-    // Check if bid is high enough
-    if (numericBid <= auction.current_bid) {
-      return res.status(400).json({ error: "Bid must be higher than the current bid." });
-    }
-
-    // 2. START TRANSACTION
-    // This ensures both the history log and the price update succeed together
-    await db.query("START TRANSACTION");
-
-    try {
-      // Record the bid in history
-      await db.query(
-        "INSERT INTO bids (auction_id, bidder_id, bid_amount) VALUES (?, ?, ?)", 
-        [auction_id, bidder_id, numericBid]
-      );
-
-      // Update the main auction price
-      await db.query(
-        "UPDATE auctions SET current_bid = ? WHERE id = ?", 
-        [numericBid, auction_id]
-      );
-
-      await db.query("COMMIT");
-      res.status(200).json({ message: "Bid placed successfully!" });
-
-    } catch (transactionError) {
-      await db.query("ROLLBACK");
-      throw transactionError; // Pass to the outer catch block
-    }
-
+    res.status(200).json({ message: "Bid placed successfully!" });
   } catch (err) {
     console.error("Bidding Error:", err);
     res.status(500).json({ error: "Bidding failed due to a server error." });
   }
 });
+
 // Get all active auctions
 app.get("/api/auctions", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT auctions.*, users.first_name as seller_name 
-       FROM auctions 
-       JOIN users ON auctions.seller_id = users.id 
-       WHERE status = 'active' 
-       ORDER BY created_at DESC`
-    );
-    res.json(rows);
+    const { data, error } = await db
+      .from("auctions")
+      .select(`
+        *,
+        users (
+          first_name
+        )
+      `)
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    // Transform the data to match the expected format (seller_name)
+    const transformedData = data.map(item => ({
+      ...item,
+      seller_name: item.users ? item.users.first_name : "Unknown"
+    }));
+
+    res.json(transformedData);
   } catch (err) {
+    console.error("Fetch Auctions Error:", err);
     res.status(500).json({ error: "Failed to fetch auctions" });
   }
 });
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

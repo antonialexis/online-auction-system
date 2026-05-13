@@ -1,12 +1,14 @@
-//db connection (Ayaw ni e-alter)
-const mysql = require("mysql2");
+const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+const supabaseUrl = process.env.SUPABASE_URL;
+// Use service role key if available (for backend), otherwise fallback to anon key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-module.exports = pool.promise();
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Missing SUPABASE_URL or SUPABASE_ANON_KEY/SERVICE_ROLE_KEY in environment variables.");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = supabase;

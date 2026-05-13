@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Header from "../components/header";
+import { supabase } from "../supabaseClient";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -7,7 +8,6 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [isChangingPass, setIsChangingPass] = useState(false);
-  // FIX 1: Names must match backend keys exactly (old_password, new_password)
   const [passwords, setPasswords] = useState({
     old_password: "",
     new_password: "",
@@ -20,15 +20,19 @@ const ProfilePage = () => {
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-        setFormData(data);
-      }
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) throw error;
+      
+      setUser(data);
+      setFormData(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -41,91 +45,46 @@ const ProfilePage = () => {
   };
 
   const saveDetails = async () => {
-    const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://localhost:5000/api/profile/update", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData), // Ensure this matches DB columns
-      });
+      const { error } = await supabase
+        .from("users")
+        .update({
+          email: formData.email,
+          contact_number: formData.contact_number,
+          hobbies: formData.hobbies
+        })
+        .eq("id", user.id);
 
-      const result = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
-        alert("Profile Updated Successfully!");
-        setIsEditing(false);
-        // Force refresh data from DB
-        await fetchUserData();
-      } else {
-        // If the server returns an error, show it
-        alert(`Update Failed: ${result.error || "Unknown error"}`);
-      }
+      alert("Profile Updated Successfully!");
+      setIsEditing(false);
+      await fetchUserData();
     } catch (err) {
       console.error("Save error:", err);
-      alert("Could not connect to server.");
+      alert(err.message || "Update Failed");
     }
   };
 
-  // 2. UPLOAD PROFILE PIC
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const data = new FormData();
-    data.append("profilePic", file);
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/profile/upload-pic",
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` }, // Do NOT set Content-Type header when using FormData
-          body: data,
-        },
-      );
-
-      if (response.ok) {
-        alert("Image uploaded successfully!");
-        fetchUserData(); // Refresh profile data
-      } else {
-        alert("Upload failed. Please try again.");
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Server error during upload.");
-    }
+    alert("Image upload requires Supabase Storage setup. Please create a 'profile-pics' bucket in your Supabase dashboard.");
   };
 
-  // 3. CHANGE PASSWORD (Fixed naming mismatch)
   const handlePasswordUpdate = async () => {
-    const token = localStorage.getItem("token");
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/profile/change-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(passwords), // Ensure this object has old_password and new_password
-        },
-      );
+      const { error } = await supabase.auth.updateUser({
+        password: passwords.new_password
+      });
 
-      const data = await response.json();
-      if (response.ok) {
-        alert("Password updated successfully!");
-        setIsChangingPass(false);
-        setPasswords({ old_password: "", new_password: "" });
-      } else {
-        alert(`Error: ${data.error || "Failed to update"}`);
-      }
+      if (error) throw error;
+
+      alert("Password updated successfully!");
+      setIsChangingPass(false);
+      setPasswords({ old_password: "", new_password: "" });
     } catch (err) {
-      alert("Network Error: Could not connect to the server.");
+      alert(err.message || "Failed to update password");
     }
   };
 

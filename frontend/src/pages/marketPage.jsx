@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/header';
 import ItemCard from '../components/itemcards'; 
 import ItemModal from '../components/itemModal';
-
+import { supabase } from '../supabaseClient';
 
 const MarketPage = () => {
     const navigate = useNavigate();
@@ -13,6 +13,7 @@ const MarketPage = () => {
     React.useEffect(() => {
         const fetchAuctions = async () => {
             try {
+<<<<<<< HEAD
                 const response = await fetch("http://localhost:5000/api/auctions");
                 const data = await response.json();
                 
@@ -25,6 +26,25 @@ const MarketPage = () => {
                     currentBid: parseFloat(item.current_bid) || 0, // Ensure it's a number
                     image: item.image_url || 'https://placehold.co/600x600/png?text=No+Image',
                     description: item.description
+=======
+                const { data, error } = await supabase
+                    .from("auctions")
+                    .select(`
+                        *,
+                        users!auctions_seller_id_fkey (
+                            first_name
+                        )
+                    `)
+                    .eq("status", "active")
+                    .order("created_at", { ascending: false });
+
+                if (error) throw error;
+
+                const normalized = data.map((auction) => ({
+                  ...auction,
+                  id: auction.id,
+                  seller_name: auction.users ? auction.users.first_name : "Unknown"
+>>>>>>> 87ee87f (Made the database, Supabase.)
                 }));
 
                 setAllItems(formattedData);

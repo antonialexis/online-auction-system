@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -13,6 +14,10 @@ const Signup = () => {
     gender: "",
     password: "",
     confirm_password: "",
+<<<<<<< HEAD
+=======
+    role: "", 
+>>>>>>> 87ee87f (Made the database, Supabase.)
   });
 
   const [hobbiesList, setHobbiesList] = useState([]);
@@ -23,11 +28,9 @@ const Signup = () => {
   useEffect(() => {
     const fetchHobbies = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/hobbies");
-        if (response.ok) {
-          const data = await response.json();
-          setHobbiesList(data);
-        }
+        const { data, error } = await supabase.from("hobbies").select("*");
+        if (error) throw error;
+        setHobbiesList(data);
       } catch (err) {
         console.error("Could not load hobbies:", err);
       }
@@ -43,7 +46,14 @@ const Signup = () => {
     e.preventDefault();
     setError("");
 
+<<<<<<< HEAD
     // 1. Validation Logic
+=======
+    if (!formData.role) {
+      setError("Please select a role (Buyer or Seller).");
+      return;
+    }
+>>>>>>> 87ee87f (Made the database, Supabase.)
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
@@ -58,24 +68,28 @@ const Signup = () => {
       return;
     }
 
-    // 2. API Submission
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            contact_number: formData.contact_number,
+            hobbies: formData.hobbies,
+            gender: formData.gender,
+            role: formData.role,
+          },
+        },
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
-        alert("Registration successful! Redirecting to login...");
-        navigate("/");
-      } else {
-        setError(data.error || "Registration failed.");
-      }
+      alert("Registration successful! Please check your email for verification.");
+      navigate("/");
     } catch (err) {
-      setError("Server connection failed. Make sure backend is running.");
+      setError(err.message || "Registration failed.");
     }
   };
 

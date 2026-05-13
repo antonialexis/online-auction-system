@@ -1,44 +1,50 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/header";
 import ItemCard from "../components/itemcards";
 import ItemModal from "../components/itemModal";
-
-// Simulated data for your new categories and items (Items, Bids requirements)
-const collectorItems = [
-  {
-    id: 1,
-    title: "Limited Edition Naruto (Nine-Tails Chakra Mode) PVC Figurine",
-    seller: "AAnime_Vault",
-    sellerShort: "AV",
-    currentBid: 3200,
-    bids: 88,
-    image: "https://placehold.co/600x600/png?text=Naruto+Figurine",
-  },
-  {
-    id: 2,
-    title: "PSA 10 Gem Mint Shadowless First Edition Charizard",
-    seller: "Pika_Pros",
-    sellerShort: "PP",
-    currentBid: 125000,
-    bids: 212,
-    image: "https://placehold.co/600x600/png?text=Charizard+Card",
-  },
-  {
-    id: 3,
-    title: "Original Japanese Neo Destiny Sealed Booster Box",
-    seller: "TCG_Treasures",
-    sellerShort: "TT",
-    currentBid: 9800,
-    bids: 74,
-    image: "https://placehold.co/600x600/png?text=TCG+Booster",
-  },
-];
+import { supabase } from "../supabaseClient";
 
 const HomePage = () => {
+  const [collectorItems, setCollectorItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [loading, setLoading] = useState(true);
   const limitedItemsRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('auctions')
+          .select(`
+            *,
+            users!auctions_seller_id_fkey (
+              first_name
+            )
+          `)
+          .eq('status', 'active')
+          .limit(3)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Map Supabase data to the format expected by ItemCard/ItemModal
+        const formattedItems = data.map(item => ({
+          ...item,
+          seller_name: item.users?.first_name || 'Anonymous'
+        }));
+
+        setCollectorItems(formattedItems);
+      } catch (err) {
+        console.error("Error fetching homepage items:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, []);
 
   const scrollToItems = () => {
     limitedItemsRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,12 +60,11 @@ const HomePage = () => {
           <div className="col-lg-6 text-start">
             <h1 className="display-3 fw-bold text-white mb-4 lh-sm">
               Explore the{" "}
-              <span style={{ color: "var(--accent-pink)" }}>10,000+</span> best
-              collectible items right here
+              <span style={{ color: "var(--accent-pink)" }}>Elite</span> Collector Circle
             </h1>
             <p className="lead text-white opacity-75 mb-5">
-              Buy rare digital and physical collectibles in here to add
-              to your collection.
+              Buy rare figurines, trading cards, and vintage collectibles.
+              Start your collection journey today.
             </p>
 
            <div className="d-flex gap-3 justify-content-start">
@@ -95,15 +100,12 @@ const HomePage = () => {
           </div>
 
           <div className="col-lg-6 d-none d-lg-block">
-            {/* FEATURED ITEM DISPLAY */}
             <div
               className="p-3"
               style={{
-                border:
-                  "2px solid rgba(217, 70, 239, 0.4)" /* Pink border outline */,
+                border: "2px solid rgba(217, 70, 239, 0.4)",
                 borderRadius: "24px",
               }}
-              onClick={() => setSelectedItem(collectorItems[1])}
             >
               <img
                 src="https://placehold.co/600x600/png?text=Featured+Lot"
@@ -120,13 +122,6 @@ const HomePage = () => {
         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 dark-theme-border">
           <div className="d-flex align-items-center gap-2">
             <h3 className="h5 fw-bold text-white mb-0">Browse Categories:</h3>
-            <button
-              className="btn btn-outline-light btn-sm ms-2 dropdown-toggle rounded-pill"
-              type="button"
-              data-bs-toggle="dropdown"
-            >
-              All Collectibles
-            </button>
           </div>
         </div>
 
@@ -135,11 +130,7 @@ const HomePage = () => {
           <div className="col">
             <button
               className="btn btn-light w-100 text-start py-3 fw-bold rounded-4 shadow-sm"
-              style={{
-                backgroundColor: "#161a2d",
-                color: "#fff",
-                borderColor: "transparent",
-              }}
+              style={{ backgroundColor: "#161a2d", color: "#fff", borderColor: "transparent" }}
             >
               <i className="bi bi-robot me-2"></i> Anime Figurines
             </button>
@@ -147,11 +138,7 @@ const HomePage = () => {
           <div className="col">
             <button
               className="btn btn-light w-100 text-start py-3 fw-bold rounded-4 shadow-sm"
-              style={{
-                backgroundColor: "#161a2d",
-                color: "#fff",
-                borderColor: "transparent",
-              }}
+              style={{ backgroundColor: "#161a2d", color: "#fff", borderColor: "transparent" }}
             >
               <i className="bi bi-ticket me-2"></i> Trading Cards
             </button>
@@ -159,23 +146,15 @@ const HomePage = () => {
           <div className="col">
             <button
               className="btn btn-light w-100 text-start py-3 fw-bold rounded-4 shadow-sm"
-              style={{
-                backgroundColor: "#161a2d",
-                color: "#fff",
-                borderColor: "transparent",
-              }}
+              style={{ backgroundColor: "#161a2d", color: "#fff", borderColor: "transparent" }}
             >
-              <i className="bi bi-book me-2"></i> Rare Manga/Comics
+              <i className="bi bi-book me-2"></i> Rare Manga
             </button>
           </div>
           <div className="col">
             <button
               className="btn btn-light w-100 text-start py-3 fw-bold rounded-4 shadow-sm"
-              style={{
-                backgroundColor: "#161a2d",
-                color: "#fff",
-                borderColor: "transparent",
-              }}
+              style={{ backgroundColor: "#161a2d", color: "#fff", borderColor: "transparent" }}
             >
               <i className="bi bi-controller me-2"></i> Vintage Gaming
             </button>
@@ -183,7 +162,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* LIMITED ITEMS | INIT NGA ITEMS */}
+      {/* LIMITED ITEMS */}
      <section ref={limitedItemsRef} className="container mb-5 pb-5">
         <div className="d-flex align-items-center justify-content-between mb-4">
             <h2 className="h4 fw-bold text-white mb-0">
@@ -199,16 +178,22 @@ const HomePage = () => {
         </div>
 
         <div className="row row-cols-1 row-cols-md-3 g-4">
-            {collectorItems.map((item) => (
-              <div 
-                className="col" 
-                key={item.id} 
-                onClick={() => setSelectedItem(item)} 
-                style={{ cursor: "pointer" }}
-              >
-                <ItemCard item={item} />
-              </div>
-            ))}
+            {loading ? (
+              <div className="col-12 text-center text-white-50">Loading auctions...</div>
+            ) : collectorItems.length > 0 ? (
+              collectorItems.map((item) => (
+                <div 
+                  className="col" 
+                  key={item.id} 
+                  onClick={() => setSelectedItem(item)} 
+                  style={{ cursor: "pointer" }}
+                >
+                  <ItemCard item={item} />
+                </div>
+              ))
+            ) : (
+              <div className="col-12 text-center text-white-50">No active auctions found.</div>
+            )}
         </div>
       </section>
 

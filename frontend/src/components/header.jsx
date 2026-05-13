@@ -1,16 +1,15 @@
 import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const Header = () => {
   const navigate = useNavigate();
 
-  // Retrieve the name saved during login
   const userName = localStorage.getItem("userName") || "Guest";
 
-  // Logout handler
-  const handleLogout = (e) => {
-    e.stopPropagation(); // Prevents navigating to /profile when clicking logout
-    localStorage.removeItem("token");
+  const handleLogout = async (e) => {
+    e.stopPropagation(); 
+    await supabase.auth.signOut();
     localStorage.removeItem("userName");
     navigate("/");
   };

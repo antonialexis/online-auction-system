@@ -1,38 +1,32 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleReset = async (e) => {
     e.preventDefault();
     setMessage("");
     setError("");
+    setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/forgot-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, newPassword }),
-        },
-      );
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
-        setMessage("Success! Password updated.");
-        setTimeout(() => navigate("/"), 2000); // Send back to login after 2s
-      } else {
-        setError(data.error || "Could not reset password");
-      }
+      setMessage("Check your email for the password reset link!");
     } catch (err) {
-      setError("Server connection failed.");
+      setError(err.message || "Could not send reset email");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,7 +42,7 @@ const ForgotPassword = () => {
         <div className="text-center mb-4">
           <h3 className="text-white fw-bold">Reset Access</h3>
           <p className="text-white-50 small">
-            Secure your account with a new password
+            We will send a recovery link to your email
           </p>
         </div>
 
@@ -86,16 +80,6 @@ const ForgotPassword = () => {
               required
             />
           </div>
-          <div className="mb-4 text-start">
-            <label className="text-white-50 small mb-1">New Password</label>
-            <input
-              type="password"
-              className="form-control bg-dark text-white border-secondary py-2 shadow-none"
-              placeholder="••••••••"
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
-          </div>
           <button
             type="submit"
             className="btn w-100 fw-bold py-2 mb-3 text-dark"
@@ -103,8 +87,9 @@ const ForgotPassword = () => {
               background: "linear-gradient(45deg, #05d9c6, #00bfaf)",
               border: "none",
             }}
+            disabled={loading}
           >
-            Update Password
+            {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>
         <div className="text-center">
