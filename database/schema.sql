@@ -10,9 +10,14 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255) UNIQUE,
+    role VARCHAR(20) DEFAULT 'buyer' CHECK (role IN ('buyer', 'seller', 'admin')),
+    phone VARCHAR(20),
     contact_number VARCHAR(20),
     hobbies VARCHAR(100),
     gender VARCHAR(20),
+    birthday DATE,
+    address TEXT,
+    is_banned BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,15 +25,29 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, first_name, last_name, contact_number, hobbies, gender)
+  INSERT INTO public.users (
+    id,
+    email,
+    first_name,
+    last_name,
+    role,
+    phone,
+    contact_number,
+    hobbies,
+    gender,
+    is_banned
+  )
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'first_name',
     new.raw_user_meta_data->>'last_name',
-    new.raw_user_meta_data->>'contact_number',
+    COALESCE(new.raw_user_meta_data->>'role', 'buyer'),
+    COALESCE(new.raw_user_meta_data->>'phone', new.raw_user_meta_data->>'contact_number'),
+    COALESCE(new.raw_user_meta_data->>'contact_number', new.raw_user_meta_data->>'phone'),
     new.raw_user_meta_data->>'hobbies',
-    new.raw_user_meta_data->>'gender'
+    new.raw_user_meta_data->>'gender',
+    COALESCE((new.raw_user_meta_data->>'is_banned')::boolean, false)
   );
   RETURN new;
 END;
@@ -88,7 +107,9 @@ CREATE POLICY "Allow public read access to hobbies" ON hobbies FOR SELECT USING 
 -- 1. Read access
 CREATE POLICY "Allow users to read data" ON users FOR SELECT USING (true);
 -- 2. Users can update their own data
-CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+-- 3. Users can create only their own profile if the auth trigger is not used
+CREATE POLICY "Allow users to insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Auctions:
 -- 1. Anyone can read active auctions

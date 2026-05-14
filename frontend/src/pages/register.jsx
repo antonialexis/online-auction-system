@@ -44,36 +44,36 @@ const Signup = () => {
       return;
     }
 
+    const profile = {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      contact_number: formData.phone.trim(),
+      hobbies: formData.hobbies.trim(),
+      gender: formData.gender,
+      role: formData.role,
+      is_banned: false,
+    };
+
     setLoading(true);
     try {
-      // 1. Create user in Supabase Auth
+      // Create the auth user. The database trigger should copy this metadata
+      // into public.users, which avoids a browser-side insert blocked by RLS.
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: profile.email,
         password: formData.password,
+        options: {
+          data: profile,
+        },
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error("Registration failed. Please try again.");
 
-      if (authData.user) {
-        // 2. Create user profile in public.users table
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert([{
-            id: authData.user.id,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role: formData.role,
-            phone: formData.phone,
-            hobbies: formData.hobbies,
-            is_banned: false
-          }]);
-
-        if (profileError) throw profileError;
-
-        alert("Account created successfully! Please log in.");
-        navigate("/");
-      }
+      await supabase.auth.signOut();
+      alert("Account created successfully! Please log in.");
+      navigate("/");
     } catch (err) {
       console.error("Signup error:", err);
       setError(err.message || "Registration failed");
