@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255) UNIQUE,
+    role VARCHAR(20) DEFAULT 'buyer' CHECK (role IN ('buyer', 'seller', 'admin')),
+    phone VARCHAR(20),
     contact_number VARCHAR(20),
     bio TEXT,
     id_document_url TEXT,
@@ -13,6 +15,9 @@ CREATE TABLE IF NOT EXISTS users (
     verification_status VARCHAR(20) DEFAULT 'pending',
     rating DECIMAL(2,1) DEFAULT 4.5,
     gender VARCHAR(20),
+    birthday DATE,
+    address TEXT,
+    is_banned BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,12 +25,28 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+<<<<<<< HEAD
   INSERT INTO public.users (id, email, first_name, last_name, contact_number, bio, gender, is_verified, verification_status, id_document_url, rating)
+=======
+  INSERT INTO public.users (
+    id,
+    email,
+    first_name,
+    last_name,
+    role,
+    phone,
+    contact_number,
+    hobbies,
+    gender,
+    is_banned
+  )
+>>>>>>> e97165b688b3dc7c870e649c2414b5dc42f3a963
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'first_name',
     new.raw_user_meta_data->>'last_name',
+<<<<<<< HEAD
     new.raw_user_meta_data->>'contact_number',
     new.raw_user_meta_data->>'bio',
     new.raw_user_meta_data->>'gender',
@@ -33,6 +54,14 @@ BEGIN
     'pending',
     new.raw_user_meta_data->>'id_document_url',
     4.5
+=======
+    COALESCE(new.raw_user_meta_data->>'role', 'buyer'),
+    COALESCE(new.raw_user_meta_data->>'phone', new.raw_user_meta_data->>'contact_number'),
+    COALESCE(new.raw_user_meta_data->>'contact_number', new.raw_user_meta_data->>'phone'),
+    new.raw_user_meta_data->>'hobbies',
+    new.raw_user_meta_data->>'gender',
+    COALESCE((new.raw_user_meta_data->>'is_banned')::boolean, false)
+>>>>>>> e97165b688b3dc7c870e649c2414b5dc42f3a963
   );
   RETURN new;
 END;
@@ -84,7 +113,9 @@ ALTER TABLE bids ENABLE ROW LEVEL SECURITY;
 -- 1. Read access
 CREATE POLICY "Allow users to read data" ON users FOR SELECT USING (true);
 -- 2. Users can update their own data
-CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+-- 3. Users can create only their own profile if the auth trigger is not used
+CREATE POLICY "Allow users to insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Auctions:
 -- 1. Anyone can read active auctions

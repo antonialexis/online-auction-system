@@ -49,6 +49,18 @@ const Signup = () => {
       return;
     }
 
+    const profile = {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      contact_number: formData.phone.trim(),
+      hobbies: formData.hobbies.trim(),
+      gender: formData.gender,
+      role: formData.role,
+      is_banned: false,
+    };
+
     setLoading(true);
     try {
       let idUrl = null;
@@ -58,13 +70,13 @@ const Signup = () => {
 
       if (idFile) {
         // Simulate ID Verification Scenario (e.g. system validates the ID)
-        isVerified = true; 
+        isVerified = true;
         verificationStatus = 'approved';
 
         const fileExt = idFile.name.split('.').pop();
         const fileName = `${Date.now()}_id.${fileExt}`;
         filePath = `id-documents/${fileName}`;
-        
+
         // Note: URL will only be valid after upload, but we can pre-calculate the path
         const { data: urlData } = supabase.storage
           .from('auction-images')
@@ -74,7 +86,7 @@ const Signup = () => {
 
       // 1. Create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: profile.email,
         password: formData.password,
         options: {
           data: {
@@ -155,7 +167,7 @@ const Signup = () => {
                 <div className="d-flex gap-3">
                   <input type="radio" className="btn-check" name="role" id="buyer" value="buyer" checked={formData.role === "buyer"} onChange={handleChange} />
                   <label className="btn btn-outline-info fw-bold py-2 flex-grow-1" htmlFor="buyer">Buy Items</label>
-                  
+
                   <input type="radio" className="btn-check" name="role" id="seller" value="seller" checked={formData.role === "seller"} onChange={handleChange} />
                   <label className="btn btn-outline-info fw-bold py-2 flex-grow-1" htmlFor="seller">Sell Items</label>
                 </div>
