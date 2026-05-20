@@ -64,6 +64,7 @@ const MarketPage = () => {
               ...auction,
               id: auction.id,
               seller_name: auction.users ? auction.users.first_name : "Unknown",
+              seller_rating: auction.users ? auction.users.rating : 4.5,
               image_url: auction.image_url || 'https://placehold.co/600x600/png?text=No+Image',
               starting_price: auction.starting_price ?? auction.starting_bid ?? 0,
             }));
@@ -173,14 +174,14 @@ const MarketPage = () => {
                                 <div className="d-flex gap-2 mb-2">
                                     <input 
                                         type="number" 
-                                        placeholder="Min" 
+                                        placeholder="e.g. $50" 
                                         className="form-control form-control-sm bg-dark text-white border-secondary rounded-3 py-2" 
                                         value={filters.minPrice}
                                         onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
                                     />
                                     <input 
                                         type="number" 
-                                        placeholder="Max" 
+                                        placeholder="e.g. $10000" 
                                         className="form-control form-control-sm bg-dark text-white border-secondary rounded-3 py-2" 
                                         value={filters.maxPrice}
                                         onFocus={() => setShowPriceSuggestions(true)}

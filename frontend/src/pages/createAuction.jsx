@@ -14,7 +14,8 @@ const CreateAuction = () => {
   const [formData, setFormData] = useState({
     itemName: '',
     category: 'Anime Figurines',
-    startingBid: '',
+    minPrice: '',
+    maxPrice: '',
     duration: '3',
     description: '',
   });
@@ -25,7 +26,8 @@ const CreateAuction = () => {
       if (!user) {
         navigate('/');
       } else {
-        setUser(user);
+        const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+        setUser({ ...user, ...profile });
       }
     };
     checkUser();
@@ -108,8 +110,8 @@ const CreateAuction = () => {
           title: formData.itemName,
           item_name: formData.itemName,
           description: formData.description,
-          starting_price: parseFloat(formData.startingBid),
-          current_bid: parseFloat(formData.startingBid),
+          starting_price: parseFloat(formData.minPrice.replace(/[^0-9.]/g, '')),
+          current_bid: parseFloat(formData.minPrice.replace(/[^0-9.]/g, '')),
           category: formData.category,
           end_time: endTime.toISOString(),
           status: 'pending',
@@ -139,7 +141,15 @@ const CreateAuction = () => {
               <h2 className="text-white fw-bold mb-1">List Your Collectible</h2>
               <p className="text-white-50 small mb-4">Fill in the details below to create your auction listing.</p>
 
-              <form className="row g-4 text-start" onSubmit={handleSubmit}>
+              {user && user.is_verified === false ? (
+                <div className="alert alert-warning py-4 text-center mt-4">
+                  <i className="bi bi-exclamation-triangle-fill fs-3 d-block mb-2 text-warning"></i>
+                  <h5 className="fw-bold text-dark">Verification Pending</h5>
+                  <p className="mb-0 text-dark">Your ID is under review. You will be notified within 24 hours. You cannot list auctions yet.</p>
+                  <button className="btn btn-dark mt-3" onClick={() => navigate('/market')}>Back to Market</button>
+                </div>
+              ) : (
+                <form className="row g-4 text-start" onSubmit={handleSubmit}>
 
                 {/* Item Name */}
                 <div className="col-12">
@@ -167,17 +177,25 @@ const CreateAuction = () => {
                 </div>
 
                 <div className="col-md-6">
-                  <label className="text-white-50 small mb-2">Starting Bid ($)</label>
-                  <input
-                    type="number"
-                    name="startingBid"
-                    className="form-control bg-dark border-secondary text-white py-3"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    onChange={handleChange}
-                    required
-                  />
+                  <label className="text-white-50 small mb-2">Price Range</label>
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      name="minPrice"
+                      className="form-control bg-dark border-secondary text-white py-3"
+                      placeholder="Min Price (e.g. $10)"
+                      onChange={handleChange}
+                      required
+                    />
+                    <span className="input-group-text bg-dark border-secondary text-white-50">-</span>
+                    <input
+                      type="text"
+                      name="maxPrice"
+                      className="form-control bg-dark border-secondary text-white py-3"
+                      placeholder="Max Price (e.g. $100)"
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
 
                 {/* Duration */}
@@ -300,6 +318,7 @@ const CreateAuction = () => {
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ const Signup = () => {
     last_name: "",
     email: "",
     phone: "",
-    hobbies: "",
+    bio: "",
     gender: "Male",
     role: "buyer",
     password: "",
@@ -21,6 +21,11 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [idFile, setIdFile] = useState(null);
+
+  const handleIdChange = (e) => {
+    setIdFile(e.target.files[0]);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,32 +51,60 @@ const Signup = () => {
 
     setLoading(true);
     try {
+      let idUrl = null;
+      let filePath = null;
+      let isVerified = false;
+      let verificationStatus = 'pending';
+
+      if (idFile) {
+        // Simulate ID Verification Scenario (e.g. system validates the ID)
+        isVerified = true; 
+        verificationStatus = 'approved';
+
+        const fileExt = idFile.name.split('.').pop();
+        const fileName = `${Date.now()}_id.${fileExt}`;
+        filePath = `id-documents/${fileName}`;
+        
+        // Note: URL will only be valid after upload, but we can pre-calculate the path
+        const { data: urlData } = supabase.storage
+          .from('auction-images')
+          .getPublicUrl(filePath);
+        idUrl = urlData.publicUrl;
+      }
+
       // 1. Create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            contact_number: formData.phone,
+            bio: formData.bio,
+            gender: formData.gender,
+            role: formData.role,
+            is_banned: false,
+            is_verified: isVerified,
+            verification_status: verificationStatus,
+            id_document_url: idUrl
+          }
+        }
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Create user profile in public.users table
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert([{
-            id: authData.user.id,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role: formData.role,
-            phone: formData.phone,
-            hobbies: formData.hobbies,
-            is_banned: false
-          }]);
+        if (idFile && filePath) {
+          // Upload the file after user is created
+          await supabase.storage.from('auction-images').upload(filePath, idFile, { upsert: true });
+        }
 
-        if (profileError) throw profileError;
-
-        alert("Account created successfully! Please log in.");
+        if (isVerified) {
+          alert("Account created successfully! Your ID has been automatically verified.");
+        } else {
+          alert("Account created successfully! Your ID is under review.");
+        }
         navigate("/");
       }
     } catch (err) {
@@ -139,9 +172,15 @@ const Signup = () => {
                 </div>
               </div>
 
-              <div className="mb-3 text-start">
-                <label className="text-white-50 small mb-1">Hobby / Interest</label>
-                <input type="text" name="hobbies" className="form-control bg-dark border-secondary text-white py-2" placeholder="e.g. Anime, Cards, Cars" onChange={handleChange} />
+              <div className="row">
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Short Bio</label>
+                  <input type="text" name="bio" className="form-control bg-dark border-secondary text-white py-2" placeholder="e.g. Anime collector" onChange={handleChange} />
+                </div>
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Verify ID Document (Required)</label>
+                  <input type="file" className="form-control bg-dark border-secondary text-white py-2" accept="image/*,.pdf" onChange={handleIdChange} required />
+                </div>
               </div>
 
               <div className="row">

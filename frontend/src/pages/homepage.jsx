@@ -39,6 +39,7 @@ const HomePage = () => {
       const formattedData = data.map((auction) => ({
         ...auction,
         seller_name: auction.users ? auction.users.first_name : "Unknown",
+        seller_rating: auction.users ? auction.users.rating : 4.5,
         image_url: auction.image_url || 'https://placehold.co/600x600/png?text=No+Image',
         starting_price: auction.starting_price ?? auction.starting_bid ?? 0,
       }));

@@ -12,6 +12,11 @@ const ItemCard = ({ item }) => {
             {item.status}
           </span>
         )}
+        {item.is_limited && (
+          <span className="position-absolute top-0 start-0 m-3 badge rounded-pill bg-danger text-white px-3 py-2 shadow" style={{ zIndex: 2, border: '1px solid #ff4757', animation: 'pulse 2s infinite' }}>
+            <i className="bi bi-star-fill text-warning me-1"></i> LIMITED EDITION
+          </span>
+        )}
       </div>
       <div className="card-body p-4 text-start">
         <h6 className="card-title text-white fw-bold mb-1 text-truncate">{item.item_name || item.title}</h6>
@@ -37,6 +42,15 @@ const ItemCard = ({ item }) => {
           View Details
         </button>
       </div>
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+          }
+        `}
+      </style>
     </div>
   );
 };

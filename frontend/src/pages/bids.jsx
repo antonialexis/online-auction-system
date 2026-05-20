@@ -178,19 +178,39 @@ const Bids = () => {
                                   ${bid.bid_amount.toLocaleString()}
                                 </td>
                                 <td>
-                                  {bid.bid_amount >= bid.auctions?.current_bid ? (
-                                    <span className="badge bg-success rounded-pill px-3">Winning</span>
-                                  ) : (
-                                    <span className="badge bg-danger rounded-pill px-3">Outbid</span>
-                                  )}
+                                  {(() => {
+                                    const auction = bid.auctions;
+                                    const isEnded = !auction || new Date(auction.end_time) < new Date() || auction.status === 'closed';
+                                    const isHighestBidder = bid.bid_amount >= (auction?.current_bid ?? 0);
+                                    if (isEnded) {
+                                      return isHighestBidder
+                                        ? <span className="badge rounded-pill px-3" style={{ backgroundColor: '#fbbf24', color: '#000' }}>🏆 Item Won</span>
+                                        : <span className="badge bg-secondary rounded-pill px-3">Auction Ended</span>;
+                                    }
+                                    return isHighestBidder
+                                      ? <span className="badge bg-success rounded-pill px-3">Winning</span>
+                                      : <span className="badge bg-danger rounded-pill px-3">Outbid</span>;
+                                  })()}
                                 </td>
                                 <td className="pe-4 text-end">
-                                  <button 
-                                    className="btn btn-sm btn-outline-info rounded-pill px-3"
-                                    onClick={() => handleAction(bid.auction_id)}
-                                  >
-                                    {bid.bid_amount >= bid.auctions?.current_bid ? 'View' : 'Bid Again'}
-                                  </button>
+                                  {(() => {
+                                    const auction = bid.auctions;
+                                    const isEnded = !auction || new Date(auction.end_time) < new Date() || auction.status === 'closed';
+                                    const isHighestBidder = bid.bid_amount >= (auction?.current_bid ?? 0);
+                                    if (isEnded) {
+                                      return isHighestBidder
+                                        ? <span className="text-warning small fw-bold"><i className="bi bi-trophy-fill me-1"></i>Congratulations!</span>
+                                        : <span className="text-white-50 small">Auction closed</span>;
+                                    }
+                                    return (
+                                      <button 
+                                        className="btn btn-sm btn-outline-info rounded-pill px-3"
+                                        onClick={() => handleAction(bid.auction_id)}
+                                      >
+                                        {isHighestBidder ? 'View' : 'Bid Again'}
+                                      </button>
+                                    );
+                                  })()}
                                 </td>
                               </tr>
                             ))}

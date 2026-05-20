@@ -14,7 +14,7 @@ const ProfilePage = () => {
     last_name: '',
     phone: '',
     birthday: '',
-    hobbies: '',
+    bio: '',
     address: ''
   });
 
@@ -42,7 +42,7 @@ const ProfilePage = () => {
         last_name: profile.last_name || '',
         phone: profile.phone || '',
         birthday: profile.birthday || '',
-        hobbies: profile.hobbies || '',
+        bio: profile.bio || '',
         address: profile.address || ''
       });
 
@@ -150,8 +150,8 @@ const ProfilePage = () => {
               <div className="mt-4 pt-3 border-top border-secondary text-start">
                 <small className="text-white-50 d-block mb-1">Account Status</small>
                 <div className="d-flex align-items-center gap-2">
-                  <div className="rounded-circle bg-success" style={{ width: '8px', height: '8px' }}></div>
-                  <span className="small">Verified Member</span>
+                  <div className={`rounded-circle ${user?.is_verified ? 'bg-success' : 'bg-warning'}`} style={{ width: '8px', height: '8px' }}></div>
+                  <span className="small">{user?.is_verified ? 'Verified Member' : 'Pending Verification'}</span>
                 </div>
               </div>
             </div>
@@ -192,8 +192,8 @@ const ProfilePage = () => {
                     <input type="date" className="form-control bg-dark border-secondary text-white" value={editData.birthday} onChange={e => setEditData({...editData, birthday: e.target.value})} />
                   </div>
                   <div className="col-12">
-                    <label className="text-white-50 small mb-1">Hobbies / Interests</label>
-                    <input type="text" className="form-control bg-dark border-secondary text-white" value={editData.hobbies} onChange={e => setEditData({...editData, hobbies: e.target.value})} />
+                    <label className="text-white-50 small mb-1">Short Bio</label>
+                    <input type="text" className="form-control bg-dark border-secondary text-white" value={editData.bio} onChange={e => setEditData({...editData, bio: e.target.value})} />
                   </div>
                   <div className="col-12">
                     <label className="text-white-50 small mb-1">Shipping Address</label>
@@ -220,8 +220,8 @@ const ProfilePage = () => {
                     <p className="fw-bold">{user?.birthday ? new Date(user.birthday).toLocaleDateString() : "Not set"}</p>
                   </div>
                   <div className="col-md-6">
-                    <label className="text-white-50 small d-block mb-1">Primary Interests / Hobbies</label>
-                    <p className="fw-bold">{user?.hobbies || "Not set"}</p>
+                    <label className="text-white-50 small d-block mb-1">Short Bio</label>
+                    <p className="fw-bold">{user?.bio || "Not set"}</p>
                   </div>
                   <div className="col-12 border-top border-secondary pt-4 mt-2">
                     <label className="text-white-50 small d-block mb-1">Shipping Address</label>
