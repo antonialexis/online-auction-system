@@ -14,10 +14,6 @@
         {
             "source": "/_/backend/:path*",
             "destination": "/_/backend/:path*"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/"
         }
     ]
 }
