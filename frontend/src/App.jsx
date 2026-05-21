@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Signup from "./pages/register";
-import ForgotPassword from "./pages/forgotpassword";
+import ForgotPassword from "./pages/forgotPassword";
 import HomePage from "./pages/homepage";
 import Bids from "./pages/bids"; 
 import MarketPage from "./pages/marketPage";
