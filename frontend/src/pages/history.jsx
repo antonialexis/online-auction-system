@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/header';
 import { supabase } from '../supabaseClient';
+import { notify } from '../utils/notifications';
 
 const HistoryPage = () => {
   const [historyData, setHistoryData] = useState([]);
@@ -111,7 +112,7 @@ const HistoryPage = () => {
   }, []);
 
   const handleDownloadReport = () => {
-    if (historyData.length === 0) return alert("No history to download");
+    if (historyData.length === 0) return notify("No history to download.", "info");
     
     const headers = ["Type", "Item", "Date", "Amount", "Status", "Partner"];
     const rows = historyData.map(r => [r.type, r.item, r.date, r.amount, r.status, r.partner]);

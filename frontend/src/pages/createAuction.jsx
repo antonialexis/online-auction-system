@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/header';
 import { supabase } from '../supabaseClient';
+import { getVerificationMessage, isVerifiedUser } from '../utils/auctionUtils';
+import { notify } from '../utils/notifications';
 
 const CreateAuction = () => {
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ const CreateAuction = () => {
 
   const [formData, setFormData] = useState({
     itemName: '',
-    category: 'Anime Figurines',
+    category: '',
     minPrice: '',
     maxPrice: '',
     duration: '3',
@@ -44,13 +46,13 @@ const CreateAuction = () => {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPG, PNG, WEBP, or GIF).');
+      notify('Please upload a valid image file (JPG, PNG, WEBP, or GIF).', 'warning');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be smaller than 5MB.');
+      notify('Image must be smaller than 5MB.', 'warning');
       return;
     }
 
@@ -77,6 +79,10 @@ const CreateAuction = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
+    if (!isVerifiedUser(user)) {
+      notify(getVerificationMessage(user), 'warning');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -121,11 +127,11 @@ const CreateAuction = () => {
 
       if (error) throw error;
 
-      alert('Listing submitted! It will go live after admin approval.');
+      notify('Listing submitted. It will go live after admin approval.', 'success');
       navigate('/market');
     } catch (err) {
       console.error('Error creating auction:', err);
-      alert('Failed to create auction: ' + err.message);
+      notify('Failed to create auction: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -141,11 +147,11 @@ const CreateAuction = () => {
               <h2 className="text-white fw-bold mb-1">List Your Collectible</h2>
               <p className="text-white-50 small mb-4">Fill in the details below to create your auction listing.</p>
 
-              {user && user.is_verified === false ? (
+              {user && !isVerifiedUser(user) ? (
                 <div className="alert alert-warning py-4 text-center mt-4">
                   <i className="bi bi-exclamation-triangle-fill fs-3 d-block mb-2 text-warning"></i>
                   <h5 className="fw-bold text-dark">Verification Pending</h5>
-                  <p className="mb-0 text-dark">Your ID is under review. You will be notified within 24 hours. You cannot list auctions yet.</p>
+                  <p className="mb-0 text-dark">{getVerificationMessage(user)} You cannot list auctions yet.</p>
                   <button className="btn btn-dark mt-3" onClick={() => navigate('/market')}>Back to Market</button>
                 </div>
               ) : (
@@ -157,8 +163,9 @@ const CreateAuction = () => {
                   <input
                     type="text"
                     name="itemName"
-                    className="form-control bg-dark border-secondary text-white py-3"
+                    className="form-control border-secondary py-3"
                     placeholder="e.g. Mint Condition Luffy Gear 5 Statue"
+                    value={formData.itemName}
                     onChange={handleChange}
                     required
                   />
@@ -167,7 +174,14 @@ const CreateAuction = () => {
                 {/* Category & Starting Bid */}
                 <div className="col-md-6">
                   <label className="text-white-50 small mb-2">Category</label>
-                  <select name="category" className="form-select bg-dark border-secondary text-white py-3" onChange={handleChange}>
+                  <select
+                    name="category"
+                    className="form-select border-secondary py-3"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select Category</option>
                     <option>Anime Figurines</option>
                     <option>Trading Cards</option>
                     <option>Manga</option>
@@ -182,17 +196,19 @@ const CreateAuction = () => {
                     <input
                       type="text"
                       name="minPrice"
-                      className="form-control bg-dark border-secondary text-white py-3"
-                      placeholder="Min Price (e.g. $10)"
+                      className="form-control border-secondary py-3"
+                      placeholder="Starting price (e.g. $10)"
+                      value={formData.minPrice}
                       onChange={handleChange}
                       required
                     />
-                    <span className="input-group-text bg-dark border-secondary text-white-50">-</span>
+                    <span className="input-group-text border-secondary">-</span>
                     <input
                       type="text"
                       name="maxPrice"
-                      className="form-control bg-dark border-secondary text-white py-3"
-                      placeholder="Max Price (e.g. $100)"
+                      className="form-control border-secondary py-3"
+                      placeholder="Optional buyout or target price (e.g. $100)"
+                      value={formData.maxPrice}
                       onChange={handleChange}
                     />
                   </div>
@@ -201,7 +217,7 @@ const CreateAuction = () => {
                 {/* Duration */}
                 <div className="col-md-6">
                   <label className="text-white-50 small mb-2">Duration (Days)</label>
-                  <select name="duration" className="form-select bg-dark border-secondary text-white py-3" onChange={handleChange}>
+                  <select name="duration" className="form-select border-secondary py-3" value={formData.duration} onChange={handleChange}>
                     <option value="1">1 Day</option>
                     <option value="3">3 Days</option>
                     <option value="5">5 Days</option>
@@ -215,8 +231,9 @@ const CreateAuction = () => {
                   <textarea
                     name="description"
                     rows="4"
-                    className="form-control bg-dark border-secondary text-white"
-                    placeholder="Tell bidders why this item is special..."
+                    className="form-control border-secondary"
+                    placeholder="Describe condition, authenticity, inclusions, and any flaws..."
+                    value={formData.description}
                     onChange={handleChange}
                     required
                   ></textarea>

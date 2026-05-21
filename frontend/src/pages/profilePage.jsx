@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/header';
 import { supabase } from '../supabaseClient';
+import { getAuctioneerId, isVerifiedUser } from '../utils/auctionUtils';
+import { notify } from '../utils/notifications';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -96,9 +98,9 @@ const ProfilePage = () => {
       
       setUser({ ...user, ...editData });
       setIsEditing(false);
-      alert("Profile updated successfully!");
+      notify("Profile updated successfully.", "success");
     } catch (err) {
-      alert("Error updating profile: " + err.message);
+      notify("Error updating profile: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -150,9 +152,15 @@ const ProfilePage = () => {
               <div className="mt-4 pt-3 border-top border-secondary text-start">
                 <small className="text-white-50 d-block mb-1">Account Status</small>
                 <div className="d-flex align-items-center gap-2">
-                  <div className={`rounded-circle ${user?.is_verified ? 'bg-success' : 'bg-warning'}`} style={{ width: '8px', height: '8px' }}></div>
-                  <span className="small">{user?.is_verified ? 'Verified Member' : 'Pending Verification'}</span>
+                  <div className={`rounded-circle ${isVerifiedUser(user) ? 'bg-success' : 'bg-warning'}`} style={{ width: '8px', height: '8px' }}></div>
+                  <span className="small">{isVerifiedUser(user) ? 'Verified Member' : user?.verification_status === 'rejected' ? 'Verification Rejected' : 'Pending Verification'}</span>
                 </div>
+                {isVerifiedUser(user) && (
+                  <div className="mt-2 small">
+                    <span className="text-white-50">Auctioneer ID: </span>
+                    <span className="text-info fw-bold">{getAuctioneerId(user.id)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

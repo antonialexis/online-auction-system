@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import CountdownTimer from './CountdownTimer';
+import { getAuctionBadges, getAuctioneerId, getVerificationMessage, isVerifiedUser } from '../utils/auctionUtils';
+import { notify } from '../utils/notifications';
 
 const ItemModal = ({ item, onClose, onBidSuccess }) => {
   const [bidAmount, setBidAmount] = useState('');
@@ -70,7 +72,7 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
   if (!item) return null;
 
   const handleWatchlist = async () => {
-    if (!user) return alert("Please log in to use the watchlist");
+    if (!user) return notify("Please log in to use the watchlist", "warning");
     
     if (isWatching) {
       const { error } = await supabase
@@ -88,8 +90,9 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
   };
 
   const handlePlaceBid = async () => {
-    if (!user) return alert("Please log in to place a bid");
-    if (!bidAmount || isNaN(bidAmount)) return alert("Please enter a valid bid amount");
+    if (!user) return notify("Please log in to place a bid", "warning");
+    if (!isVerifiedUser(user)) return notify(getVerificationMessage(user), "warning");
+    if (!bidAmount || isNaN(bidAmount)) return notify("Please enter a valid bid amount", "warning");
 
     setBidding(true);
     try {
@@ -103,12 +106,12 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
       if (fetchErr) throw fetchErr;
 
       if (freshAuction.status === 'closed' || new Date(freshAuction.end_time) < new Date()) {
-        return alert("This auction has already ended.");
+        return notify("This auction has already ended.", "warning");
       }
 
       const freshPrice = freshAuction.current_bid ?? freshAuction.starting_price;
       if (parseFloat(bidAmount) <= parseFloat(freshPrice)) {
-        return alert(`Your bid must be HIGHER than the current price of $${Number(freshPrice).toLocaleString()}. Equal bids are not accepted.`);
+        return notify(`Your bid must be higher than the current price of $${Number(freshPrice).toLocaleString()}. Equal bids are not accepted.`, "warning");
       }
       const { error } = await supabase
         .from('bids')
@@ -128,19 +131,20 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
 
       if (updateError) throw updateError;
 
-      alert("Bid placed successfully!");
+      notify("Bid placed successfully.", "success");
       setBidAmount('');
       if (onBidSuccess) onBidSuccess();
       fetchBidHistory();
     } catch (err) {
       console.error("Bidding error:", err);
-      alert("Error placing bid: " + err.message);
+      notify("Error placing bid: " + err.message, "error");
     } finally {
       setBidding(false);
     }
   };
 
   const isEnded = new Date(item.end_time) < new Date() || item.status === 'closed';
+  const auctionBadges = getAuctionBadges(item);
 
   return (
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1050 }}>
@@ -192,13 +196,13 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
                   <p className="text-white-50 small mb-0">Seller: <span className="text-info fw-bold">{item.seller_name || item.seller || 'Unknown'}</span></p>
                   
-                  {/* Verified ID Badge */}
-                  <span className="badge bg-success text-white px-2 py-1" title="Identity Verified by System">
-                    <i className="bi bi-shield-check me-1"></i> ID Verified
-                  </span>
+                  {item.seller_verified === true && (
+                    <span className="badge bg-success text-white px-2 py-1" title="Identity verified by admin">
+                      <i className="bi bi-shield-check me-1"></i> ID Verified
+                    </span>
+                  )}
                   
-                  {/* Unique Identifier */}
-                  <span className="badge bg-secondary text-light opacity-75">UID: {item.seller_id?.substring(0,8) || 'Unknown'}</span>
+                  <span className="badge bg-secondary text-light opacity-75">Auctioneer ID: {getAuctioneerId(item.seller_id)}</span>
                   
                   {/* 5-Star Visual Rating */}
                   <div className="d-flex align-items-center bg-dark rounded-pill px-2 py-1 border border-secondary" title="Seller Rating">
@@ -214,6 +218,15 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
                 </div>
 
                 <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: '#161a2d', border: '1px solid rgba(5, 217, 198, 0.2)' }}>
+                  {auctionBadges.length > 0 && (
+                    <div className="d-flex flex-wrap gap-2 mb-3">
+                      {auctionBadges.map((badge) => (
+                        <span key={badge.key} className={`badge rounded-pill text-capitalize ${badge.className}`}>
+                          <i className={`bi ${badge.icon} me-1`}></i>{badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <div>
                       <small className="text-white-50 d-block">Current Price</small>
@@ -229,10 +242,10 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
 
                   {!isEnded && item.status === 'active' && (
                     <>
-                      {user && user.is_verified === false ? (
+                      {user && !isVerifiedUser(user) ? (
                         <div className="alert alert-warning py-2 small mb-2 d-flex align-items-center">
                           <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                          Your ID is under review. You will be notified within 24 hours. You cannot place bids yet.
+                          {getVerificationMessage(user)} You cannot place bids yet.
                         </div>
                       ) : (
                         <>

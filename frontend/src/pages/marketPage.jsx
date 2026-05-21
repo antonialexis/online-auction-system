@@ -45,7 +45,10 @@ const MarketPage = () => {
                 .select(`
                     *,
                     users!auctions_seller_id_fkey (
-                        first_name
+                        first_name,
+                        rating,
+                        is_verified,
+                        verification_status
                     )
                 `);
 
@@ -65,6 +68,7 @@ const MarketPage = () => {
               id: auction.id,
               seller_name: auction.users ? auction.users.first_name : "Unknown",
               seller_rating: auction.users ? auction.users.rating : 4.5,
+              seller_verified: auction.users?.is_verified === true && auction.users?.verification_status === 'approved',
               image_url: auction.image_url || 'https://placehold.co/600x600/png?text=No+Image',
               starting_price: auction.starting_price ?? auction.starting_bid ?? 0,
             }));
@@ -84,7 +88,7 @@ const MarketPage = () => {
         // Subscribe to real-time changes in auctions
         const channel = supabase
             .channel('public:auctions')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'auctions' }, (payload) => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'auctions' }, () => {
                 fetchAuctions();
             })
             .subscribe();
@@ -174,14 +178,14 @@ const MarketPage = () => {
                                 <div className="d-flex gap-2 mb-2">
                                     <input 
                                         type="number" 
-                                        placeholder="e.g. $50" 
+                                        placeholder="Min price" 
                                         className="form-control form-control-sm bg-dark text-white border-secondary rounded-3 py-2" 
                                         value={filters.minPrice}
                                         onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
                                     />
                                     <input 
                                         type="number" 
-                                        placeholder="e.g. $10000" 
+                                        placeholder="Max price" 
                                         className="form-control form-control-sm bg-dark text-white border-secondary rounded-3 py-2" 
                                         value={filters.maxPrice}
                                         onFocus={() => setShowPriceSuggestions(true)}

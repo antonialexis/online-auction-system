@@ -42,3 +42,17 @@ input::-webkit-credentials-auto-fill-button {
   position: absolute;
   right: 0;
 }
+
+/* Ensure placeholders remain visible only on dark form controls */
+.form-control.bg-dark::placeholder,
+.form-control.bg-dark textarea::placeholder,
+textarea.form-control.bg-dark::placeholder {
+  color: rgba(255, 255, 255, 0.75);
+  opacity: 1;
+}
+
+.form-control.bg-dark:focus::placeholder,
+textarea.form-control.bg-dark:focus::placeholder {
+  color: rgba(255, 255, 255, 0.75);
+  opacity: 1;
+}

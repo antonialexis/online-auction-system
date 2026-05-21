@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { notify } from '../utils/notifications';
 
 const BanListener = () => {
     const navigate = useNavigate();
@@ -22,7 +23,7 @@ const BanListener = () => {
             loggingOut = true;
             removeCurrentChannel();
             await supabase.auth.signOut();
-            alert("You have been banned by the admin.");
+            notify("You have been banned by the admin.", "error");
             navigate('/', { replace: true });
         };
 

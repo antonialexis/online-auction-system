@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { notify } from "../utils/notifications";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [idFile, setIdFile] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleIdChange = (e) => {
     setIdFile(e.target.files[0]);
@@ -48,6 +50,10 @@ const Signup = () => {
       setError("Passwords do not match.");
       return;
     }
+    if (!idFile) {
+      setError("Please upload a valid ID document for admin verification.");
+      return;
+    }
 
     const profile = {
       first_name: formData.first_name.trim(),
@@ -55,7 +61,7 @@ const Signup = () => {
       email: formData.email.trim(),
       phone: formData.phone.trim(),
       contact_number: formData.phone.trim(),
-      hobbies: formData.hobbies.trim(),
+      bio: formData.bio.trim(),
       gender: formData.gender,
       role: formData.role,
       is_banned: false,
@@ -65,19 +71,14 @@ const Signup = () => {
     try {
       let idUrl = null;
       let filePath = null;
-      let isVerified = false;
-      let verificationStatus = 'pending';
+      const isVerified = false;
+      const verificationStatus = 'pending';
 
       if (idFile) {
-        // Simulate ID Verification Scenario (e.g. system validates the ID)
-        isVerified = true;
-        verificationStatus = 'approved';
-
         const fileExt = idFile.name.split('.').pop();
-        const fileName = `${Date.now()}_id.${fileExt}`;
+        const fileName = `${Date.now()}_${profile.email.replace(/[^a-z0-9]/gi, '_')}_id.${fileExt}`;
         filePath = `id-documents/${fileName}`;
 
-        // Note: URL will only be valid after upload, but we can pre-calculate the path
         const { data: urlData } = supabase.storage
           .from('auction-images')
           .getPublicUrl(filePath);
@@ -93,6 +94,7 @@ const Signup = () => {
             first_name: formData.first_name,
             last_name: formData.last_name,
             contact_number: formData.phone,
+            phone: formData.phone,
             bio: formData.bio,
             gender: formData.gender,
             role: formData.role,
@@ -108,16 +110,30 @@ const Signup = () => {
 
       if (authData.user) {
         if (idFile && filePath) {
-          // Upload the file after user is created
-          await supabase.storage.from('auction-images').upload(filePath, idFile, { upsert: true });
+          const { error: uploadError } = await supabase.storage
+            .from('auction-images')
+            .upload(filePath, idFile, { upsert: true });
+          if (uploadError) throw uploadError;
         }
 
-        if (isVerified) {
-          alert("Account created successfully! Your ID has been automatically verified.");
-        } else {
-          alert("Account created successfully! Your ID is under review.");
+        const { error: profileUpdateError } = await supabase
+          .from('users')
+          .update({
+            ...profile,
+            is_verified: false,
+            verification_status: 'pending',
+            id_document_url: idUrl,
+          })
+          .eq('id', authData.user.id);
+
+        if (profileUpdateError) {
+          console.warn("Profile verification data was stored in signup metadata, but the direct profile update failed:", profileUpdateError.message);
         }
-        navigate("/");
+
+        const message = "Pending admin Verification, Please wait for 24 hours.";
+        setSuccessMessage(message);
+        notify(message, "warning");
+        window.setTimeout(() => navigate("/"), 2500);
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -149,6 +165,7 @@ const Signup = () => {
             </div>
 
             {error && <div className="alert alert-danger py-2 small text-center">{error}</div>}
+            {successMessage && <div className="alert alert-warning py-2 small text-center">{successMessage}</div>}
 
             <form onSubmit={handleSignup}>
               <div className="row">
