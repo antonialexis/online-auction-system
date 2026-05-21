@@ -13,11 +13,13 @@ import HistoryPage from "./pages/history";
 import AdminPage from "./pages/adminPage";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import BanListener from "./components/BanListener";
+import NotificationToasts from "./components/NotificationToasts";
 
 function App() {
   return (
     <Router>
       <BanListener />
+      <NotificationToasts />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />

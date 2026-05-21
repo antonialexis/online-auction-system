@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import CountdownTimer from './CountdownTimer';
+import { getAuctionBadges, getAuctioneerId, getVerificationMessage, isVerifiedUser } from '../utils/auctionUtils';
+import { notify } from '../utils/notifications';
 
 const ItemModal = ({ item, onClose, onBidSuccess }) => {
   const [bidAmount, setBidAmount] = useState('');
@@ -13,8 +15,11 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
   useEffect(() => {
     const checkStatus = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      setUser(authUser);
-      if (authUser && item) {
+      if (authUser) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+        setUser({ ...authUser, ...profile });
+        
+        if (item) {
         const { data } = await supabase
           .from('watchlist')
           .select('id')
@@ -22,6 +27,7 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
           .eq('auction_id', item.id)
           .maybeSingle();
         if (data) setIsWatching(true);
+        }
       }
     };
     checkStatus();
@@ -66,7 +72,7 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
   if (!item) return null;
 
   const handleWatchlist = async () => {
-    if (!user) return alert("Please log in to use the watchlist");
+    if (!user) return notify("Please log in to use the watchlist", "warning");
     
     if (isWatching) {
       const { error } = await supabase
@@ -84,16 +90,29 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
   };
 
   const handlePlaceBid = async () => {
-    if (!user) return alert("Please log in to place a bid");
-    if (!bidAmount || isNaN(bidAmount)) return alert("Please enter a valid bid amount");
-    
-    const currentPrice = item.current_bid ?? item.starting_price;
-    if (parseFloat(bidAmount) <= parseFloat(currentPrice)) {
-      return alert(`Bid must be higher than $${currentPrice}`);
-    }
+    if (!user) return notify("Please log in to place a bid", "warning");
+    if (!isVerifiedUser(user)) return notify(getVerificationMessage(user), "warning");
+    if (!bidAmount || isNaN(bidAmount)) return notify("Please enter a valid bid amount", "warning");
 
     setBidding(true);
     try {
+      // Fetch the FRESHEST current price from DB to avoid stale data
+      const { data: freshAuction, error: fetchErr } = await supabase
+        .from('auctions')
+        .select('current_bid, starting_price, status, end_time')
+        .eq('id', item.id)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+
+      if (freshAuction.status === 'closed' || new Date(freshAuction.end_time) < new Date()) {
+        return notify("This auction has already ended.", "warning");
+      }
+
+      const freshPrice = freshAuction.current_bid ?? freshAuction.starting_price;
+      if (parseFloat(bidAmount) <= parseFloat(freshPrice)) {
+        return notify(`Your bid must be higher than the current price of $${Number(freshPrice).toLocaleString()}. Equal bids are not accepted.`, "warning");
+      }
       const { error } = await supabase
         .from('bids')
         .insert([{
@@ -112,19 +131,20 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
 
       if (updateError) throw updateError;
 
-      alert("Bid placed successfully!");
+      notify("Bid placed successfully.", "success");
       setBidAmount('');
       if (onBidSuccess) onBidSuccess();
       fetchBidHistory();
     } catch (err) {
       console.error("Bidding error:", err);
-      alert("Error placing bid: " + err.message);
+      notify("Error placing bid: " + err.message, "error");
     } finally {
       setBidding(false);
     }
   };
 
   const isEnded = new Date(item.end_time) < new Date() || item.status === 'closed';
+  const auctionBadges = getAuctionBadges(item);
 
   return (
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1050 }}>
@@ -173,9 +193,40 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
                     {isWatching ? 'Watching' : 'Watchlist'}
                   </button>
                 </div>
-                <p className="text-white-50 small mb-4">Seller: <span className="text-info fw-bold">{item.seller_name || item.seller || 'Unknown'}</span></p>
+                <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
+                  <p className="text-white-50 small mb-0">Seller: <span className="text-info fw-bold">{item.seller_name || item.seller || 'Unknown'}</span></p>
+                  
+                  {item.seller_verified === true && (
+                    <span className="badge bg-success text-white px-2 py-1" title="Identity verified by admin">
+                      <i className="bi bi-shield-check me-1"></i> ID Verified
+                    </span>
+                  )}
+                  
+                  <span className="badge bg-secondary text-light opacity-75">Auctioneer ID: {getAuctioneerId(item.seller_id)}</span>
+                  
+                  {/* 5-Star Visual Rating */}
+                  <div className="d-flex align-items-center bg-dark rounded-pill px-2 py-1 border border-secondary" title="Seller Rating">
+                    <span className="text-warning small me-1" style={{ fontSize: '0.75rem' }}>
+                      <i className="bi bi-star-fill"></i>
+                      <i className="bi bi-star-fill"></i>
+                      <i className="bi bi-star-fill"></i>
+                      <i className="bi bi-star-fill"></i>
+                      <i className="bi bi-star-half"></i>
+                    </span>
+                    <span className="text-white small fw-bold ms-1" style={{ fontSize: '0.8rem' }}>{item.seller_rating ? Number(item.seller_rating).toFixed(1) : '4.5'} / 5.0</span>
+                  </div>
+                </div>
 
                 <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: '#161a2d', border: '1px solid rgba(5, 217, 198, 0.2)' }}>
+                  {auctionBadges.length > 0 && (
+                    <div className="d-flex flex-wrap gap-2 mb-3">
+                      {auctionBadges.map((badge) => (
+                        <span key={badge.key} className={`badge rounded-pill text-capitalize ${badge.className}`}>
+                          <i className={`bi ${badge.icon} me-1`}></i>{badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <div>
                       <small className="text-white-50 d-block">Current Price</small>
@@ -191,25 +242,34 @@ const ItemModal = ({ item, onClose, onBidSuccess }) => {
 
                   {!isEnded && item.status === 'active' && (
                     <>
-                      <div className="input-group mb-2">
-                        <input 
-                          type="number" 
-                          className="form-control bg-dark border-secondary text-white py-2 shadow-none" 
-                          placeholder="Enter your bid..." 
-                          value={bidAmount}
-                          onChange={(e) => setBidAmount(e.target.value)}
-                          disabled={bidding}
-                        />
-                        <button 
-                          className="btn btn-info px-4 fw-bold" 
-                          style={{ backgroundColor: '#05d9c6', border: 'none', color: '#000' }}
-                          onClick={handlePlaceBid}
-                          disabled={bidding}
-                        >
-                          {bidding ? 'Placing...' : 'Place Bid'}
-                        </button>
-                      </div>
-                      <small className="text-white-50">Bid increment: Must be higher than current price.</small>
+                      {user && !isVerifiedUser(user) ? (
+                        <div className="alert alert-warning py-2 small mb-2 d-flex align-items-center">
+                          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                          {getVerificationMessage(user)} You cannot place bids yet.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="input-group mb-2">
+                            <input 
+                              type="number" 
+                              className="form-control bg-dark border-secondary text-white py-2 shadow-none" 
+                              placeholder="Enter your bid..." 
+                              value={bidAmount}
+                              onChange={(e) => setBidAmount(e.target.value)}
+                              disabled={bidding}
+                            />
+                            <button 
+                              className="btn btn-info px-4 fw-bold" 
+                              style={{ backgroundColor: '#05d9c6', border: 'none', color: '#000' }}
+                              onClick={handlePlaceBid}
+                              disabled={bidding}
+                            >
+                              {bidding ? 'Placing...' : 'Place Bid'}
+                            </button>
+                          </div>
+                          <small className="text-white-50">Bid increment: Must be higher than current price.</small>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

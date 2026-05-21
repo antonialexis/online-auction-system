@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AdminHeader from '../components/AdminHeader';
 import ItemModal from '../components/itemModal';
 import { supabase } from '../supabaseClient';
+import { getAuctioneerId } from '../utils/auctionUtils';
+import { notify } from '../utils/notifications';
 
 const AdminPage = () => {
     const location = useLocation();
@@ -16,6 +18,8 @@ const AdminPage = () => {
     const [listingFilter, setListingFilter] = useState('pending'); // 'pending' | 'active' | 'rejected'
     const [feedbackModal, setFeedbackModal] = useState(null); // { auctionId, text }
     const [selectedItem, setSelectedItem] = useState(null);
+    const [userFilter, setUserFilter] = useState('all'); // 'all' | 'pending_id'
+    const [idVerificationModal, setIdVerificationModal] = useState(null); // selected user
 
     // Sync tab from URL query param
     useEffect(() => {
@@ -39,7 +43,7 @@ const AdminPage = () => {
 
             const { data: usersData, error: uErr } = await supabase
                 .from('users')
-                .select('id, first_name, last_name, email, role, is_banned, created_at')
+                .select('id, first_name, last_name, email, role, is_banned, created_at, phone, contact_number, bio, gender, is_verified, verification_status, id_document_url')
                 .order('created_at', { ascending: false });
             if (uErr) throw uErr;
 
@@ -63,7 +67,8 @@ const AdminPage = () => {
             .from('auctions')
             .update({ status: 'active', admin_feedback: null })
             .eq('id', id);
-        if (error) return alert('Error: ' + error.message);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify('Listing approved.', 'success');
         fetchData();
     };
 
@@ -73,7 +78,8 @@ const AdminPage = () => {
             .from('auctions')
             .update({ status: 'rejected', admin_feedback: feedback || 'This listing was rejected by an admin.' })
             .eq('id', id);
-        if (error) return alert('Error: ' + error.message);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify('Listing rejected.', 'success');
         setFeedbackModal(null);
         fetchData();
     };
@@ -83,14 +89,16 @@ const AdminPage = () => {
             .from('auctions')
             .update({ is_limited: !currentLimited })
             .eq('id', id);
-        if (error) return alert('Error toggling limited: ' + error.message);
+        if (error) return notify('Error toggling limited: ' + error.message, 'error');
+        notify(!currentLimited ? 'Listing marked as limited.' : 'Listing removed from limited.', 'success');
         fetchData();
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Permanently delete this listing?')) return;
         const { error } = await supabase.from('auctions').delete().eq('id', id);
-        if (error) return alert('Error: ' + error.message);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify('Listing deleted.', 'success');
         fetchData();
     };
 
@@ -103,22 +111,40 @@ const AdminPage = () => {
             .from('users')
             .update({ is_banned: !currentBanned })
             .eq('id', userId);
-        if (error) return alert('Error: ' + error.message);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify(currentBanned ? 'User unbanned.' : 'User banned.', 'success');
+        fetchData();
+    };
+
+    const handleApproveId = async (userId) => {
+        const { error } = await supabase.from('users').update({ is_verified: true, verification_status: 'approved' }).eq('id', userId);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify('User ID approved. Auctioneer ID is now active.', 'success');
+        setIdVerificationModal(null);
+        fetchData();
+    };
+
+    const handleRejectId = async (userId) => {
+        const { error } = await supabase.from('users').update({ is_verified: false, verification_status: 'rejected' }).eq('id', userId);
+        if (error) return notify('Error: ' + error.message, 'error');
+        notify('User ID rejected.', 'warning');
+        setIdVerificationModal(null);
         fetchData();
     };
 
     // ─── HELPERS ───────────────────────────────────────────────────────────────
 
-    const getStatusBadge = (status) => {
-        const map = {
-            active: ['bg-success', 'Active'],
-            pending: ['bg-warning text-dark', 'Pending'],
-            rejected: ['bg-danger', 'Rejected'],
-            completed: ['bg-primary', 'Completed'],
-            sold: ['bg-info text-dark', 'Sold'],
-        };
-        const [cls, label] = map[status] || ['bg-secondary', status];
-        return <span className={`badge ${cls}`}>{label}</span>;
+    const getVerificationBadge = (user) => {
+        if (user.is_verified && user.verification_status === 'approved') {
+            return <span className="badge bg-success"><i className="bi bi-shield-check me-1"></i>Verified</span>;
+        }
+        if (user.verification_status === 'pending') {
+            return <span className="badge bg-warning text-dark">Pending ID</span>;
+        }
+        if (user.verification_status === 'rejected') {
+            return <span className="badge bg-danger">Rejected ID</span>;
+        }
+        return <span className="badge bg-secondary">Unverified</span>;
     };
 
     const getRoleBadge = (role, isBanned) => {
@@ -138,9 +164,10 @@ const AdminPage = () => {
     const filteredUsers = users.filter(u =>
         (`${u.first_name} ${u.last_name}`).toLowerCase().includes(searchQuery.toLowerCase()) ||
         (u.email || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ).filter(u => userFilter === 'all' || (userFilter === 'pending_id' && u.verification_status === 'pending'));
 
     const pendingCount = auctions.filter(a => a.status === 'pending').length;
+    const pendingUserCount = users.filter(u => u.verification_status === 'pending').length;
 
     return (
         <div className="min-vh-100 text-white pb-5" style={{ backgroundColor: '#080d1a' }}>
@@ -215,6 +242,9 @@ const AdminPage = () => {
                             }
                         >
                             <i className="bi bi-people me-2"></i>User Management
+                            {pendingUserCount > 0 && (
+                                <span className="badge bg-warning text-dark ms-2" style={{ fontSize: '0.65rem' }}>{pendingUserCount}</span>
+                            )}
                         </button>
                     </div>
                     <div className="input-group input-group-sm" style={{ maxWidth: '280px' }}>
@@ -325,7 +355,7 @@ const AdminPage = () => {
                                                         <button
                                                             onClick={() => handleToggleLimited(auction.id, auction.is_limited)}
                                                             className={`btn btn-sm me-2 rounded-circle`}
-                                                            style={{ 
+                                                            style={{
                                                                 width: '32px', height: '32px', padding: 0,
                                                                 color: auction.is_limited ? '#fbbf24' : 'rgba(255,255,255,0.2)',
                                                                 backgroundColor: auction.is_limited ? 'rgba(251,191,36,0.1)' : 'transparent',
@@ -335,12 +365,12 @@ const AdminPage = () => {
                                                         >
                                                             <i className={`bi bi-star${auction.is_limited ? '-fill' : ''}`}></i>
                                                         </button>
-                                                    <button
-                                                        onClick={() => setSelectedItem(auction)}
-                                                        className="btn btn-sm btn-outline-info me-2 rounded-3 px-3 fw-bold"
-                                                    >
-                                                        View
-                                                    </button>
+                                                        <button
+                                                            onClick={() => setSelectedItem(auction)}
+                                                            className="btn btn-sm btn-outline-info me-2 rounded-3 px-3 fw-bold"
+                                                        >
+                                                            View
+                                                        </button>
                                                         {listingFilter === 'pending' && (
                                                             <>
                                                                 <button
@@ -387,106 +417,267 @@ const AdminPage = () => {
 
                 {/* ── USERS TAB ─────────────────────────────────────────────────── */}
                 {activeTab === 'users' && (
-                    <div className="rounded-4 overflow-hidden" style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.07)' }}>
-                        <div className="table-responsive">
-                            <table className="table table-hover mb-0 align-middle"
-                                style={{ '--bs-table-bg': 'transparent', '--bs-table-hover-bg': 'rgba(96,165,250,0.04)', color: '#e2e8f0' }}>
-                                <thead style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                                    <tr>
-                                        <th className="px-4 py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>User</th>
-                                        <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Email</th>
-                                        <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Status</th>
-                                        <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Joined</th>
-                                        <th className="px-4 py-3 text-white-50 small fw-semibold text-uppercase text-end" style={{ letterSpacing: '1px' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody style={{ borderTop: 'none' }}>
-                                    {loading ? (
-                                        <tr><td colSpan="5" className="text-center py-5 text-white-50">
-                                            <div className="spinner-border spinner-border-sm me-2 text-info"></div>Loading...
-                                        </td></tr>
-                                    ) : filteredUsers.length === 0 ? (
-                                        <tr><td colSpan="5" className="text-center py-5 text-white-50">No users found.</td></tr>
-                                    ) : filteredUsers.map(user => (
-                                        <tr key={user.id} style={{
-                                            borderBottom: '1px solid rgba(255,255,255,0.04)',
-                                            opacity: user.is_banned ? 0.6 : 1
-                                        }}>
-                                            <td className="px-4 py-3">
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold"
-                                                        style={{ width: '38px', height: '38px', backgroundColor: 'rgba(96,165,250,0.15)', color: '#60a5fa', flexShrink: 0 }}>
-                                                        {user.first_name?.[0]?.toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <span className="fw-semibold text-white d-block">{user.first_name} {user.last_name}</span>
-                                                        {getRoleBadge(user.role, user.is_banned)}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 text-white-50 small">{user.email}</td>
-                                            <td className="py-3">
-                                                {user.is_banned
-                                                    ? <span className="text-danger small fw-semibold"><i className="bi bi-slash-circle me-1"></i>Banned</span>
-                                                    : <span className="text-success small fw-semibold"><i className="bi bi-check-circle me-1"></i>Active</span>
-                                                }
-                                            </td>
-                                            <td className="py-3 text-white-50 small">{new Date(user.created_at).toLocaleDateString()}</td>
-                                            <td className="px-4 py-3 text-end">
-                                                {user.role !== 'admin' && (
-                                                    <button
-                                                        className={`btn btn-sm fw-bold px-3 rounded-3 ${user.is_banned ? 'btn-outline-success' : 'btn-outline-danger'}`}
-                                                        onClick={() => handleToggleBan(user.id, user.is_banned)}
-                                                    >
-                                                        {user.is_banned
-                                                            ? <><i className="bi bi-unlock me-1"></i>Unban</>
-                                                            : <><i className="bi bi-ban me-1"></i>Ban</>
-                                                        }
-                                                    </button>
-                                                )}
-                                            </td>
+                    <>
+                        <div className="d-flex gap-2 mb-3">
+                            {[
+                                { key: 'all', label: 'All Users', color: '#60a5fa' },
+                                { key: 'pending_id', label: 'Pending ID Verification', color: '#fbbf24' },
+                            ].map(({ key, label, color }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => { setUserFilter(key); setSearchQuery(''); }}
+                                    className="btn btn-sm px-3 py-1 rounded-pill fw-semibold"
+                                    style={userFilter === key
+                                        ? { backgroundColor: color, color: '#000', border: 'none' }
+                                        : { backgroundColor: 'transparent', border: `1px solid ${color}50`, color }
+                                    }
+                                >
+                                    {label}
+                                    <span className="ms-2 opacity-75" style={{ fontSize: '0.7rem' }}>
+                                        ({key === 'all' ? users.length : pendingUserCount})
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="rounded-4 overflow-hidden" style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.07)' }}>
+                            <div className="table-responsive">
+                                <table className="table table-hover mb-0 align-middle"
+                                    style={{ '--bs-table-bg': 'transparent', '--bs-table-hover-bg': 'rgba(96,165,250,0.04)', color: '#e2e8f0' }}>
+                                    <thead style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <tr>
+                                            <th className="px-4 py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>User</th>
+                                            <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Email</th>
+                                            <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Status</th>
+                                            <th className="py-3 text-white-50 small fw-semibold text-uppercase" style={{ letterSpacing: '1px' }}>Joined</th>
+                                            <th className="px-4 py-3 text-white-50 small fw-semibold text-uppercase text-end" style={{ letterSpacing: '1px' }}>Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody style={{ borderTop: 'none' }}>
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan="5" className="text-center py-5 text-white-50">
+                                                    <div className="spinner-border spinner-border-sm me-2 text-info"></div>Loading...
+                                                </td>
+                                            </tr>
+                                        ) : filteredUsers.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="5" className="text-center py-5 text-white-50">No users found.</td>
+                                            </tr>
+                                        ) : (
+                                            filteredUsers.map(user => (
+                                                <tr key={user.id} style={{
+                                                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                                    opacity: user.is_banned ? 0.6 : 1
+                                                }}>
+                                                    <td className="px-4 py-3">
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                                                style={{ width: '38px', height: '38px', backgroundColor: 'rgba(96,165,250,0.15)', color: '#60a5fa', flexShrink: 0 }}>
+                                                                {user.first_name?.[0]?.toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <span className="fw-semibold text-white d-block">{user.first_name} {user.last_name}</span>
+                                                                {getRoleBadge(user.role, user.is_banned)}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 text-white-50 small">{user.email}</td>
+                                                    <td className="py-3">
+                                                        {getVerificationBadge(user)}
+                                                        {user.is_verified && user.verification_status === 'approved' && (
+                                                            <span className="badge bg-info text-dark ms-2">{getAuctioneerId(user.id)}</span>
+                                                        )}
+                                                        {user.is_banned && <span className="badge bg-danger ms-2">Banned</span>}
+                                                    </td>
+                                                    <td className="py-3 text-white-50 small">{new Date(user.created_at).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 text-end">
+                                                        <div className="d-flex gap-2 justify-content-end flex-wrap">
+                                                            <button
+                                                                className="btn btn-sm btn-outline-info fw-bold px-3 rounded-3"
+                                                                onClick={() => setIdVerificationModal(user)}
+                                                            >
+                                                                <i className="bi bi-person-vcard me-1"></i>
+                                                                {user.verification_status === 'pending' ? 'View / Verify' : 'View Info'}
+                                                            </button>
+                                                            {user.role !== 'admin' && (
+                                                                <button
+                                                                    className={`btn btn-sm fw-bold px-3 rounded-3 ${user.is_banned ? 'btn-outline-success' : 'btn-outline-danger'}`}
+                                                                    onClick={() => handleToggleBan(user.id, user.is_banned)}
+                                                                >
+                                                                    {user.is_banned
+                                                                        ? <><i className="bi bi-unlock me-1"></i>Unban</>
+                                                                        : <><i className="bi bi-ban me-1"></i>Ban</>
+                                                                    }
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── REJECT FEEDBACK MODAL ────────────────────────────────────────── */}
+                {feedbackModal && (
+                    <div className="modal d-flex align-items-center justify-content-center"
+                        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
+                        <div className="rounded-4 p-4 shadow-lg" style={{ backgroundColor: '#0f172a', border: '1px solid rgba(96,165,250,0.2)', maxWidth: '450px', width: '90%' }}>
+                            <h5 className="text-white fw-bold mb-1">Reject Listing</h5>
+                            <p className="text-white-50 small mb-3">Optionally provide feedback so the seller can improve and resubmit.</p>
+                            <textarea
+                                className="form-control bg-dark border-secondary text-white mb-3"
+                                rows="4"
+                                placeholder="e.g. Image quality is too low, please upload a clearer photo..."
+                                value={feedbackModal.text || ''}
+                                onChange={e => setFeedbackModal({ ...feedbackModal, text: e.target.value })}
+                            ></textarea>
+                            <div className="d-flex gap-2 justify-content-end">
+                                <button className="btn btn-outline-secondary" onClick={() => setFeedbackModal(null)}>Cancel</button>
+                                <button
+                                    className="btn btn-danger fw-bold px-4"
+                                    onClick={() => {
+                                        handleReject(feedbackModal.auctionId);
+                                        setFeedbackModal(null);
+                                    }}
+                                >
+                                    <i className="bi bi-x-lg me-1"></i>Reject Listing
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* ── REJECT FEEDBACK MODAL ────────────────────────────────────────── */}
-            {feedbackModal && (
-                <div className="modal d-flex align-items-center justify-content-center"
-                    style={{ display: 'flex !important', position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
-                    <div className="rounded-4 p-4 shadow-lg" style={{ backgroundColor: '#0f172a', border: '1px solid rgba(96,165,250,0.2)', maxWidth: '450px', width: '90%' }}>
-                        <h5 className="text-white fw-bold mb-1">Reject Listing</h5>
-                        <p className="text-white-50 small mb-3">Optionally provide feedback so the seller can improve and resubmit.</p>
-                        <textarea
-                            className="form-control bg-dark border-secondary text-white mb-3"
-                            rows="4"
-                            placeholder="e.g. Image quality is too low, please upload a clearer photo..."
-                            value={feedbackModal.text}
-                            onChange={e => setFeedbackModal({ ...feedbackModal, text: e.target.value })}
-                        ></textarea>
-                        <div className="d-flex gap-2 justify-content-end">
-                            <button className="btn btn-outline-secondary" onClick={() => setFeedbackModal(null)}>Cancel</button>
-                            <button
-                                className="btn btn-danger fw-bold px-4"
-                                onClick={() => handleReject(feedbackModal.auctionId)}
-                            >
-                                <i className="bi bi-x-lg me-1"></i>Reject Listing
-                            </button>
+                {/* ── ID VERIFICATION MODAL ────────────────────────────────────────── */}
+                {idVerificationModal && (
+                    <div className="modal d-flex align-items-center justify-content-center"
+                        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
+                        <div className="rounded-4 p-4 shadow-lg" style={{ backgroundColor: '#0f172a', border: '1px solid rgba(96,165,250,0.2)', maxWidth: '920px', width: '92%' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 className="text-white fw-bold mb-0">User Verification Review</h5>
+                                    <small className="text-white-50">Review account details before approving or rejecting the ID.</small>
+                                </div>
+                                <button className="btn-close btn-close-white shadow-none" onClick={() => setIdVerificationModal(null)}></button>
+                            </div>
+
+                            <div className="row g-4 mb-4">
+                                <div className="col-lg-5">
+                                    <div className="p-3 rounded-3 h-100" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <div className="d-flex align-items-center gap-3 mb-3">
+                                            <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                                style={{ width: '48px', height: '48px', backgroundColor: 'rgba(96,165,250,0.15)', color: '#60a5fa' }}>
+                                                {idVerificationModal.first_name?.[0]?.toUpperCase() || 'U'}
+                                            </div>
+                                            <div>
+                                                <h6 className="text-white fw-bold mb-1">{idVerificationModal.first_name} {idVerificationModal.last_name}</h6>
+                                                <div className="d-flex gap-2 flex-wrap">
+                                                    {getRoleBadge(idVerificationModal.role, idVerificationModal.is_banned)}
+                                                    {getVerificationBadge(idVerificationModal)}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="d-flex flex-column gap-2 small">
+                                            <div className="d-flex justify-content-between gap-3">
+                                                <span className="text-white-50">Email</span>
+                                                <span className="text-white text-end">{idVerificationModal.email || '-'}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between gap-3">
+                                                <span className="text-white-50">Phone</span>
+                                                <span className="text-white text-end">{idVerificationModal.phone || idVerificationModal.contact_number || '-'}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between gap-3">
+                                                <span className="text-white-50">Gender</span>
+                                                <span className="text-white text-end">{idVerificationModal.gender || '-'}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between gap-3">
+                                                <span className="text-white-50">Joined</span>
+                                                <span className="text-white text-end">{new Date(idVerificationModal.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between gap-3">
+                                                <span className="text-white-50">Auctioneer ID</span>
+                                                <span className="text-info fw-bold text-end">
+                                                    {idVerificationModal.is_verified && idVerificationModal.verification_status === 'approved'
+                                                        ? getAuctioneerId(idVerificationModal.id)
+                                                        : 'Assigned after approval'}
+                                                </span>
+                                            </div>
+                                            {idVerificationModal.bio && (
+                                                <div className="pt-2 border-top border-secondary">
+                                                    <span className="text-white-50 d-block mb-1">Bio</span>
+                                                    <span className="text-white">{idVerificationModal.bio}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-lg-7">
+                                    <div className="bg-dark rounded-3 overflow-hidden d-flex align-items-center justify-content-center h-100" style={{ minHeight: '360px', maxHeight: '520px' }}>
+                                        {idVerificationModal.id_document_url ? (
+                                            idVerificationModal.id_document_url.toLowerCase().includes('.pdf') ? (
+                                                <iframe
+                                                    src={idVerificationModal.id_document_url}
+                                                    title="ID Document"
+                                                    className="w-100 h-100 border-0"
+                                                    style={{ minHeight: '420px' }}
+                                                ></iframe>
+                                            ) : (
+                                                <img src={idVerificationModal.id_document_url} alt="ID Document" className="img-fluid object-fit-contain" style={{ maxHeight: '520px' }} />
+                                            )
+                                        ) : (
+                                            <div className="text-center text-white-50 p-4">
+                                                <i className="bi bi-file-earmark-x fs-1 d-block mb-2"></i>
+                                                No ID document uploaded.
+                                            </div>
+                                        )}
+                                    </div>
+                                    {idVerificationModal.id_document_url && (
+                                        <a href={idVerificationModal.id_document_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-info mt-2">
+                                            <i className="bi bi-box-arrow-up-right me-1"></i>Open document
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="d-flex gap-2 justify-content-end">
+                                <button className="btn btn-outline-secondary" onClick={() => setIdVerificationModal(null)}>Cancel</button>
+                                {idVerificationModal.verification_status === 'pending' && (
+                                    <>
+                                        <button
+                                            className="btn btn-danger fw-bold px-4"
+                                            onClick={() => handleRejectId(idVerificationModal.id)}
+                                        >
+                                            <i className="bi bi-x-lg me-1"></i>Reject
+                                        </button>
+                                        <button
+                                            className="btn btn-success fw-bold px-4"
+                                            onClick={() => handleApproveId(idVerificationModal.id)}
+                                            disabled={!idVerificationModal.id_document_url}
+                                        >
+                                            <i className="bi bi-check-lg me-1"></i>Approve
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            {selectedItem && (
-                <ItemModal 
-                    item={selectedItem} 
-                    onClose={() => setSelectedItem(null)} 
-                    onBidSuccess={fetchData}
-                />
-            )}
+                )}
+
+                {selectedItem && (
+                    <ItemModal
+                        item={selectedItem}
+                        onClose={() => setSelectedItem(null)}
+                        onBidSuccess={fetchData}
+                    />
+                )}
+            </div>
         </div>
     );
 };

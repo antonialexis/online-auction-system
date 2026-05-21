@@ -1,16 +1,22 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
+import { getAuctionBadges } from '../utils/auctionUtils';
 
 const ItemCard = ({ item }) => {
+  const badges = getAuctionBadges(item);
+
   return (
     <div className="card h-100 border-0 rounded-4 shadow" style={{ backgroundColor: '#161a2d', overflow: 'hidden' }}>
       <div className="position-relative">
         <img src={item.image_url || item.image} className="card-img-top rounded-0" alt={item.item_name || item.title} style={{ height: '300px', objectFit: 'cover' }} />
-        {item.status !== 'active' && (
-          <span className={`position-absolute top-0 end-0 m-3 badge rounded-pill text-white small fw-normal text-capitalize`} style={{ backgroundColor: 'rgba(22, 26, 45, 0.7)', zIndex: 2 }}>
-            {item.status}
-          </span>
+        {badges.length > 0 && (
+          <div className="position-absolute top-0 start-0 end-0 m-3 d-flex flex-wrap gap-2" style={{ zIndex: 2 }}>
+            {badges.map((badge) => (
+              <span key={badge.key} className={`badge rounded-pill px-3 py-2 shadow text-capitalize ${badge.className}`}>
+                <i className={`bi ${badge.icon} me-1`}></i>{badge.label}
+              </span>
+            ))}
+          </div>
         )}
       </div>
       <div className="card-body p-4 text-start">
@@ -37,6 +43,15 @@ const ItemCard = ({ item }) => {
           View Details
         </button>
       </div>
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+          }
+        `}
+      </style>
     </div>
   );
 };

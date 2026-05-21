@@ -1,8 +1,4 @@
--- 1. Hobbies Table
-CREATE TABLE IF NOT EXISTS hobbies (
-    id SERIAL PRIMARY KEY,
-    hobby_name VARCHAR(100) NOT NULL UNIQUE
-);
+-- 1. (Removed Hobbies Table)
 
 -- 2. Users Table (Syncs with Supabase Auth)
 CREATE TABLE IF NOT EXISTS users (
@@ -10,9 +6,18 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255) UNIQUE,
+    role VARCHAR(20) DEFAULT 'buyer' CHECK (role IN ('buyer', 'seller', 'admin')),
+    phone VARCHAR(20),
     contact_number VARCHAR(20),
-    hobbies VARCHAR(100),
+    bio TEXT,
+    id_document_url TEXT,
+    is_verified BOOLEAN DEFAULT false,
+    verification_status VARCHAR(20) DEFAULT 'pending',
+    rating DECIMAL(2,1) DEFAULT 4.5,
     gender VARCHAR(20),
+    birthday DATE,
+    address TEXT,
+    is_banned BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,15 +25,43 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, first_name, last_name, contact_number, hobbies, gender)
+<<<<<<< HEAD
+  INSERT INTO public.users (id, email, first_name, last_name, contact_number, bio, gender, is_verified, verification_status, id_document_url, rating)
+=======
+  INSERT INTO public.users (
+    id,
+    email,
+    first_name,
+    last_name,
+    role,
+    phone,
+    contact_number,
+    hobbies,
+    gender,
+    is_banned
+  )
+>>>>>>> e97165b688b3dc7c870e649c2414b5dc42f3a963
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'first_name',
     new.raw_user_meta_data->>'last_name',
+<<<<<<< HEAD
     new.raw_user_meta_data->>'contact_number',
+    new.raw_user_meta_data->>'bio',
+    new.raw_user_meta_data->>'gender',
+    false,
+    'pending',
+    new.raw_user_meta_data->>'id_document_url',
+    4.5
+=======
+    COALESCE(new.raw_user_meta_data->>'role', 'buyer'),
+    COALESCE(new.raw_user_meta_data->>'phone', new.raw_user_meta_data->>'contact_number'),
+    COALESCE(new.raw_user_meta_data->>'contact_number', new.raw_user_meta_data->>'phone'),
     new.raw_user_meta_data->>'hobbies',
-    new.raw_user_meta_data->>'gender'
+    new.raw_user_meta_data->>'gender',
+    COALESCE((new.raw_user_meta_data->>'is_banned')::boolean, false)
+>>>>>>> e97165b688b3dc7c870e649c2414b5dc42f3a963
   );
   RETURN new;
 END;
@@ -38,17 +71,10 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 3. Insert Initial Hobby Data
-INSERT INTO hobbies (hobby_name) VALUES 
-('Anime Figures'),
-('Trading Cards'),
-('Vintage Coins'),
-('Rare Sneakers'),
-('Comic Books'),
-('Retro Video Games'),
-('Vinyl Records'),
-('Antique Watches')
-ON CONFLICT (hobby_name) DO NOTHING;
+-- Hobbies table is replaced or left for other uses, but we don't insert initial data for it here anymore if it's not used for users.
+-- We can still keep the table if it's used elsewhere, but the prompt says to remove it entirely from schema if it's about user hobbies.
+-- Actually I will just leave the hobbies table as it might be used for categories, but the prompt says: "Remove the 'hobby interest' field/section entirely from the registration forms, database schema, and user profile views."
+-- So I will remove the hobbies table.
 
 -- 4. Auctions Table
 CREATE TABLE IF NOT EXISTS auctions (
@@ -74,21 +100,22 @@ CREATE TABLE IF NOT EXISTS bids (
 );
 
 -- 6. Enable Row Level Security
-ALTER TABLE hobbies ENABLE ROW LEVEL SECURITY;
+-- (Removed Hobbies RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bids ENABLE ROW LEVEL SECURITY;
 
 -- 7. Policies
 
--- Hobbies: Anyone can read
-CREATE POLICY "Allow public read access to hobbies" ON hobbies FOR SELECT USING (true);
+-- (Removed Hobbies Policy)
 
 -- Users: 
 -- 1. Read access
 CREATE POLICY "Allow users to read data" ON users FOR SELECT USING (true);
 -- 2. Users can update their own data
-CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow users to update own data" ON users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+-- 3. Users can create only their own profile if the auth trigger is not used
+CREATE POLICY "Allow users to insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Auctions:
 -- 1. Anyone can read active auctions

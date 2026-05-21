@@ -2,12 +2,6 @@ import React from 'react';
 import Header from '../components/header';
 
 const AboutPage = () => {
-  const teamMembers = [
-    { name: "Member One", role: "Frontend Lead", bio: "UI/UX enthusiast obsessed with smooth animations and dark themes." },
-    { name: "Member Two", role: "Backend Architect", bio: "Database wizard ensuring every bid is secure and real-time." },
-    { name: "Member Three", role: "Product Manager", bio: "Strategic thinker connecting the dots between code and collectors." },
-  ];
-
   return (
     <div className="dark-theme min-vh-100 pb-5 text-white">
       <Header />

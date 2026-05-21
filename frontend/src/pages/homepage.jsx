@@ -6,7 +6,6 @@ import ItemModal from "../components/itemModal";
 import { supabase } from "../supabaseClient";
 
 const HomePage = () => {
-  const [collectorItems, setCollectorItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [limitedItems, setLimitedItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +25,10 @@ const HomePage = () => {
         .select(`
           *,
           users!auctions_seller_id_fkey (
-            first_name
+            first_name,
+            rating,
+            is_verified,
+            verification_status
           )
         `)
         .eq('status', 'active')
@@ -39,6 +41,8 @@ const HomePage = () => {
       const formattedData = data.map((auction) => ({
         ...auction,
         seller_name: auction.users ? auction.users.first_name : "Unknown",
+        seller_rating: auction.users ? auction.users.rating : 4.5,
+        seller_verified: auction.users?.is_verified === true && auction.users?.verification_status === 'approved',
         image_url: auction.image_url || 'https://placehold.co/600x600/png?text=No+Image',
         starting_price: auction.starting_price ?? auction.starting_bid ?? 0,
       }));

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { notify } from "../utils/notifications";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ const Signup = () => {
     last_name: "",
     email: "",
     phone: "",
-    hobbies: "",
+    bio: "",
     gender: "Male",
     role: "buyer",
     password: "",
@@ -21,6 +22,12 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [idFile, setIdFile] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const handleIdChange = (e) => {
+    setIdFile(e.target.files[0]);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,36 +50,90 @@ const Signup = () => {
       setError("Passwords do not match.");
       return;
     }
+    if (!idFile) {
+      setError("Please upload a valid ID document for admin verification.");
+      return;
+    }
+
+    const profile = {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      contact_number: formData.phone.trim(),
+      bio: formData.bio.trim(),
+      gender: formData.gender,
+      role: formData.role,
+      is_banned: false,
+    };
 
     setLoading(true);
     try {
+      let idUrl = null;
+      let filePath = null;
+      const isVerified = false;
+      const verificationStatus = 'pending';
+
+      if (idFile) {
+        const fileExt = idFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${profile.email.replace(/[^a-z0-9]/gi, '_')}_id.${fileExt}`;
+        filePath = `id-documents/${fileName}`;
+
+        const { data: urlData } = supabase.storage
+          .from('auction-images')
+          .getPublicUrl(filePath);
+        idUrl = urlData.publicUrl;
+      }
+
       // 1. Create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: profile.email,
         password: formData.password,
+        options: {
+          data: {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            contact_number: formData.phone,
+            phone: formData.phone,
+            bio: formData.bio,
+            gender: formData.gender,
+            role: formData.role,
+            is_banned: false,
+            is_verified: isVerified,
+            verification_status: verificationStatus,
+            id_document_url: idUrl
+          }
+        }
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Create user profile in public.users table
-        const { error: profileError } = await supabase
+        if (idFile && filePath) {
+          const { error: uploadError } = await supabase.storage
+            .from('auction-images')
+            .upload(filePath, idFile, { upsert: true });
+          if (uploadError) throw uploadError;
+        }
+
+        const { error: profileUpdateError } = await supabase
           .from('users')
-          .insert([{
-            id: authData.user.id,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role: formData.role,
-            phone: formData.phone,
-            hobbies: formData.hobbies,
-            is_banned: false
-          }]);
+          .update({
+            ...profile,
+            is_verified: false,
+            verification_status: 'pending',
+            id_document_url: idUrl,
+          })
+          .eq('id', authData.user.id);
 
-        if (profileError) throw profileError;
+        if (profileUpdateError) {
+          console.warn("Profile verification data was stored in signup metadata, but the direct profile update failed:", profileUpdateError.message);
+        }
 
-        alert("Account created successfully! Please log in.");
-        navigate("/");
+        const message = "Pending admin Verification, Please wait for 24 hours.";
+        setSuccessMessage(message);
+        notify(message, "warning");
+        window.setTimeout(() => navigate("/"), 2500);
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -104,6 +165,7 @@ const Signup = () => {
             </div>
 
             {error && <div className="alert alert-danger py-2 small text-center">{error}</div>}
+            {successMessage && <div className="alert alert-warning py-2 small text-center">{successMessage}</div>}
 
             <form onSubmit={handleSignup}>
               <div className="row">
@@ -122,7 +184,7 @@ const Signup = () => {
                 <div className="d-flex gap-3">
                   <input type="radio" className="btn-check" name="role" id="buyer" value="buyer" checked={formData.role === "buyer"} onChange={handleChange} />
                   <label className="btn btn-outline-info fw-bold py-2 flex-grow-1" htmlFor="buyer">Buy Items</label>
-                  
+
                   <input type="radio" className="btn-check" name="role" id="seller" value="seller" checked={formData.role === "seller"} onChange={handleChange} />
                   <label className="btn btn-outline-info fw-bold py-2 flex-grow-1" htmlFor="seller">Sell Items</label>
                 </div>
@@ -139,9 +201,15 @@ const Signup = () => {
                 </div>
               </div>
 
-              <div className="mb-3 text-start">
-                <label className="text-white-50 small mb-1">Hobby / Interest</label>
-                <input type="text" name="hobbies" className="form-control bg-dark border-secondary text-white py-2" placeholder="e.g. Anime, Cards, Cars" onChange={handleChange} />
+              <div className="row">
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Short Bio</label>
+                  <input type="text" name="bio" className="form-control bg-dark border-secondary text-white py-2" placeholder="e.g. Anime collector" onChange={handleChange} />
+                </div>
+                <div className="col-md-6 mb-3 text-start">
+                  <label className="text-white-50 small mb-1">Verify ID Document (Required)</label>
+                  <input type="file" className="form-control bg-dark border-secondary text-white py-2" accept="image/*,.pdf" onChange={handleIdChange} required />
+                </div>
               </div>
 
               <div className="row">
