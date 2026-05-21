@@ -16,8 +16,8 @@
             "destination": "/_/backend/:path*"
         },
         {
-            "source": "/:path([^.]*)",
-            "destination": "/index.html"
+            "source": "/(.*)",
+            "destination": "/"
         }
     ]
 }
