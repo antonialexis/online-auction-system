@@ -25,7 +25,7 @@ const Login = () => {
       // Fetch user profile from the public users table
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("first_name")
+        .select("first_name, role")
         .eq("id", data.user.id)
         .single();
 
@@ -34,7 +34,14 @@ const Login = () => {
       }
 
       localStorage.setItem("userName", profile?.first_name || data.user.email);
-      navigate("/home");
+      localStorage.setItem("userRole", profile?.role || "user");
+
+      // Redirect admins to admin dashboard, regular users to home
+      if (profile?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/home');
+      }
     } catch (err) {
       setError(err.message || "Invalid login credentials");
     }
